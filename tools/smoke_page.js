@@ -151,7 +151,7 @@ ok("portrait migration (m16rot)", js.indexOf("cfg.m16rot") >= 0);
 // R1.1.0（FB-010）：A1 驱动模式 + 编辑空间几何随模式切换
 // R1.1.1（FB-011/FB-012）：已删 a1Hint + DEV_API 三态 + OTA 同步页面
 // R1.1.2（FB-013）：真机定案后 A1 收敛为两档（768x552 顺序默认 / 800x600 对照）
-ok("personal branch settings are read-only",
+ok("personal branch fixed settings are read-only",
    page.indexOf('id="sleepSel"') < 0 && page.indexOf('id="wakeSel"') < 0
    && page.indexOf('id="wifiPwrSel"') < 0 && page.indexOf('id="panelSel"') < 0
    && page.indexOf('id="saveSleep"') < 0 && page.indexOf('id="savePanel"') < 0
@@ -161,6 +161,7 @@ ok("personal branch fixed defaults and battery display",
    && settings.indexOf("旧 NVS 也不得覆盖固定值") >= 0
    && settings.indexOf("s_cfg.wifi_pwr = SETT_WIFI_PWR_MID") >= 0
    && settings.indexOf("s_cfg.sleep_s = SETT_SLEEP_OFF") >= 0
+   && settings.indexOf("s_cfg.hflip = 0;") >= 0
    && page.indexOf('<b id="i-panel">A0</b>') >= 0
    && page.indexOf('<b id="i-bat">未连接电池</b>') >= 0
    && js.indexOf('$("i-bat").textContent = "未连接电池"') >= 0);
@@ -199,10 +200,10 @@ ok("R1.2.0 双端同规则嗅探 (sniffKind + readHead, 固件 0xE9 / 页面 <!d
 ok("R1.2.0 固件重启导致响应可能收不到 -> sentAll 兜底",
    js.indexOf("var sentAll = false") >= 0 && js.indexOf("if (isFw && sentAll)") >= 0);
 // R1.1.3（FB-014）：设置项就地保存状态（不再依赖图片页里不可见的 #msg）+ 保存后回读核对
-ok("personal branch only hotspot remains editable",
-   page.indexOf('id="apmsg"') >= 0 && page.indexOf('id="sleepmsg"') < 0
-   && page.indexOf('id="panelmsg"') < 0
-   && js.indexOf('var fields = { ssid: $("apSsid").value };') >= 0);
+ok("personal branch has no editable device settings",
+   page.indexOf('id="hflip"') < 0 && page.indexOf('id="saveHflip"') < 0
+   && page.indexOf('id="hflipmsg"') < 0 && page.indexOf('id="sleepmsg"') < 0
+   && page.indexOf('id="panelmsg"') < 0 && page.indexOf('id="apmsg"') < 0);
 ok("R1.1.3 就地状态助手 (saveState/readSettings/verifyFields)",
    js.indexOf("function saveState(id, kind, text)") >= 0
    && js.indexOf("function readSettings(cb)") >= 0
@@ -218,12 +219,11 @@ ok("R1.1.3 本地预览不谎报网络异常（且照常切档预览）",
    && js.indexOf("本地预览（未连设备）：只在本页生效") >= 0);
 ok("R1.1.3 旧的静默提示路径已移除",
    page.indexOf('msg("保存失败", "err")') < 0 && page.indexOf('msg("网络错误", "err")') < 0);
-ok("R1.2.0 热点密码单字段语义（留空=保持 / 勾选清除=开放，FB-014①）",
-   page.indexOf("留空 = 保持当前密码") >= 0 && page.indexOf('id="apClearPw"') >= 0
-   && page.indexOf("留空 = 清除密码") < 0 && page.indexOf("留空则不修改") < 0);
-ok("R1.2.0 热点保存按需携带 pass（缺省不发送 = 固件保持）",
-   js.indexOf('if ($("apClearPw").checked) fields.pass = "";') >= 0
-   && js.indexOf('else if ($("apPass").value) fields.pass = $("apPass").value;') >= 0);
+ok("personal branch hotspot is display-only",
+   page.indexOf('id="apSsidView"') >= 0 && page.indexOf('id="apPassView"') >= 0
+   && page.indexOf('id="apSsid"') < 0 && page.indexOf('id="apPass"') < 0
+   && page.indexOf('id="apClearPw"') < 0 && page.indexOf('id="saveAp"') < 0
+   && js.indexOf('$("apPassView").textContent = s.pass_set ? "已设置" : "开放热点"') >= 0);
 ok("R1.2.1 版本 meta", page.indexOf('content="R1.2.1"') >= 0);
 ok("R1.2.1 正式配置页不含 iOS captive 专用渲染逻辑",
    js.indexOf("captiveLitePreview") < 0 && js.indexOf("iosDevice") < 0
@@ -285,8 +285,9 @@ sandbox.DEV_API = 0;   /* 还原初态，避免污染后续断言 */
 eq("R1.1.0 panelGeomOf A0 ignores mode", sandbox.panelGeomOf(0, 1).w + "x" + sandbox.panelGeomOf(0, 1).h, "768x552");
 eq("R1.1.0 GEOM_SRC default geometry", sandbox.GEOM_SRC.w + "x" + sandbox.GEOM_SRC.h, "552x768");
 
-ok("R1.2.0 状态栏单版本号 (版本/接口, 无 fw/page 双行)",
+ok("R1.2.0 状态栏单版本号 (版本/帧协议版本, 无 fw/page 双行)",
    page.includes('id="i-verD"') && page.includes('id="i-apiD"')
+   && page.includes('<span>帧协议版本</span>') && page.includes('<span>当前已连接设备</span>')
    && page.indexOf('id="i-fw"') < 0 && page.indexOf('id="i-page"') < 0);
 ok("R1.2.0 热更页落后固件时红字警示 (DEV_FW + verNum + j.ver||j.fw)",
    js.indexOf('var DEV_FW = "";') >= 0 && js.indexOf("function verNum(v)") >= 0
@@ -300,7 +301,10 @@ ok("R1.2.0 版本号比较按 主*10000+次*100+修订",
    js.indexOf("+m[1] * 10000 + +m[2] * 100 + +m[3]") >= 0);
 ok("页脚存在 (footer#appFoot)",
    page.indexOf('id="appFoot"') >= 0 && page.indexOf("footer#appFoot") >= 0);
-ok("页脚含 GitHub 地址", page.indexOf('href="https://github.com/atunverse/moink"') >= 0);
+ok("页脚含个人版标识和 yuan GitHub 地址",
+   page.indexOf('href="https://github.com/yuan910715/moink"') >= 0
+   && page.indexOf("GitHub · yuan910715/moink") >= 0
+   && page.indexOf('m.content+" · yuan个人版"') >= 0);
 ok("页脚版本号运行时填充 (footVer + meta)",
    page.indexOf('id="footVer"') >= 0 && page.indexOf('meta[name="moink-page-version"]') >= 0);
 

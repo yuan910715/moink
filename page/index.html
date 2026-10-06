@@ -354,12 +354,12 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
     <h3 style="margin-top:0">设备信息</h3>
     <div class="infoGrid">
       <div><span>版本</span><b id="i-verD">—</b></div>
-      <div><span>接口</span><b id="i-apiD">—</b></div>
+      <div><span>帧协议版本</span><b id="i-apiD">—</b></div>
       <div><span>屏幕</span><b id="i-panel">A0</b></div>
       <div><span>当前热点</span><b id="i-ssid">—</b></div>
       <div><span>空闲内存</span><b id="i-heap">—</b></div>
       <div><span>电池</span><b id="i-bat">未连接电池</b></div>
-      <div><span>在线设备</span><b id="i-clients">—</b></div>
+      <div><span>当前已连接设备</span><b id="i-clients">—</b></div>
     </div>
 
     <details>
@@ -380,22 +380,19 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <summary>热点设置</summary>
     <div class="row">
       <label>热点名</label>
-      <input type="text" id="apSsid" maxlength="32" placeholder="留空 = MoInk-XXXX">
+      <b id="apSsidView">—</b>
+      <span class="hint" style="margin:0">此专用版本不支持修改</span>
     </div>
     <div class="row">
       <label>密码</label>
-      <input type="password" id="apPass" maxlength="64" placeholder="留空 = 开放">
-    </div>
-    <div class="row" id="apClearRow" style="display:none">
-      <label>清除密码</label>
-      <span><input type="checkbox" id="apClearPw"> 改为开放热点（与上方密码二选一）</span>
+      <b id="apPassView">—</b>
+      <span class="hint" style="margin:0">此专用版本不支持修改</span>
     </div>
     <div class="row">
       <label>WiFi 功率</label>
       <b>中（10dBm）</b>
       <span class="hint" style="margin:0">此专用版本固定</span>
     </div>
-    <div class="row"><button class="mini" id="saveAp">保存热点设置</button><span class="savestate" id="apmsg"></span></div>
     </details>
 
     <details>
@@ -434,12 +431,12 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
 
 <footer id="appFoot">
   <span>墨印 · MoInk<b id="footVer"></b></span>
-  <a href="https://github.com/atunverse/moink" target="_blank" rel="noopener noreferrer">GitHub · atunverse/moink</a>
+  <a href="https://github.com/yuan910715/moink" target="_blank" rel="noopener noreferrer">GitHub · yuan910715/moink</a>
 </footer>
 <script>
 (function(){var m=document.querySelector('meta[name="moink-page-version"]');
 var e=document.getElementById("footVer");
-if(m&&m.content&&e){ e.textContent=" · 版本 "+m.content; }})();
+if(m&&m.content&&e){ e.textContent=" · 版本 "+m.content+" · yuan个人版"; }})();
 </script>
 
 <script>
@@ -2008,6 +2005,7 @@ function refreshInfo(){
     if (j.api != null) DEV_API = +j.api || 1;
     $("i-panel").textContent = "A0";
     $("i-ssid").textContent = j.ssid || "—";
+    if (j.ssid) $("apSsidView").textContent = j.ssid;
     $("i-heap").textContent = j.heap != null ? (j.heap/1024).toFixed(0) + " KB" : "—";
     $("i-bat").textContent = "未连接电池";
     $("i-clients").textContent = j.clients != null ? j.clients : "—";
@@ -2020,10 +2018,9 @@ function refreshInfo(){
 }
 function loadSettings(){
   fetch(api("/api/settings")).then(function(r){ return r.json(); }).then(function(s){
-    $("apSsid").value = s.ssid || "";
-    $("apPass").placeholder = s.pass_set ? "已设置（留空 = 保持当前密码）" : "留空 = 开放热点";
-    $("apClearRow").style.display = s.pass_set ? "" : "none";
-    $("apClearPw").checked = false;
+    if (s.ssid) $("apSsidView").textContent = s.ssid;
+    else if ($("apSsidView").textContent === "—") $("apSsidView").textContent = "默认生成";
+    $("apPassView").textContent = s.pass_set ? "已设置" : "开放热点";
     PANEL.name = "A0"; PANEL.id = 0; A1MODE = 1;
     if (applyPanelGeom(0, 1)) onGeomChanged();
   }).catch(function(){});
@@ -2109,17 +2106,6 @@ function postSettings(fields, done, stateId, note){
     });
   });
 }
-$("saveAp").addEventListener("click", function(){
-  /* FB-014①：pass 按需携带 —— 留空 = 不携带（固件保持当前密码）；
-     勾选「清除密码」= 显式发空串（热点转开放）。 */
-  var fields = { ssid: $("apSsid").value };
-  if ($("apClearPw").checked) fields.pass = "";
-  else if ($("apPass").value) fields.pass = $("apPass").value;
-  postSettings(fields, function(){
-    $("apPass").value = "";
-    refreshInfo(); loadSettings();
-  }, "apmsg");
-});
 /* 编辑空间几何切换后的重排：画布尺寸 / 对象手柄 / 预览全部跟着换。 */
 function onGeomChanged(){
   liveBase = null;
