@@ -13,6 +13,7 @@ const vm = require("vm");
 const page = fs.readFileSync(path.join(__dirname, "..", "page", "index.html"), "utf8");
 const captive = fs.readFileSync(path.join(__dirname, "..", "src", "captive.c"), "utf8");
 const netifAp = fs.readFileSync(path.join(__dirname, "..", "src", "netif_ap.c"), "utf8");
+const settings = fs.readFileSync(path.join(__dirname, "..", "src", "settings.c"), "utf8");
 // R1.0.12 起页面有两个 <script> 块（第 1 块 = 内嵌 Cropper.js，第 2 块 = 主脚本）。
 // \r?\n：兼容 core.autocrlf 检出为 CRLF 的工作区（2026-09-22 修正）。
 const m = page.match(/<script>\r?\n"use strict";\r?\n([\s\S]*?)\r?\n<\/script>/);
@@ -150,13 +151,19 @@ ok("portrait migration (m16rot)", js.indexOf("cfg.m16rot") >= 0);
 // R1.1.0（FB-010）：A1 驱动模式 + 编辑空间几何随模式切换
 // R1.1.1（FB-011/FB-012）：已删 a1Hint + DEV_API 三态 + OTA 同步页面
 // R1.1.2（FB-013）：真机定案后 A1 收敛为两档（768x552 顺序默认 / 800x600 对照）
-ok("R1.1.2 A1 drive mode UI (a1Row/a1Sel, a1Hint removed)",
-   page.includes('id="a1Row"') && page.includes('id="a1Sel"') && page.indexOf("a1Hint") < 0);
-ok("R1.1.2 A1 options reduced to exactly two",
-   page.includes('<option value="1">768×552 顺序</option>')
-   && page.includes('<option value="2">方案A 原生800×600</option>')
-   && page.indexOf("方案D 相位1") < 0 && page.indexOf("方案D 相位2") < 0
-   && page.indexOf("方案A′") < 0 && page.indexOf("A1MODE_MAX = 4") < 0);
+ok("personal branch settings are read-only",
+   page.indexOf('id="sleepSel"') < 0 && page.indexOf('id="wakeSel"') < 0
+   && page.indexOf('id="wifiPwrSel"') < 0 && page.indexOf('id="panelSel"') < 0
+   && page.indexOf('id="saveSleep"') < 0 && page.indexOf('id="savePanel"') < 0
+   && page.indexOf("此专用版本固定") >= 0);
+ok("personal branch fixed defaults and battery display",
+   settings.indexOf(".sleep_s  = SETT_SLEEP_OFF") >= 0
+   && settings.indexOf("旧 NVS 也不得覆盖固定值") >= 0
+   && settings.indexOf("s_cfg.wifi_pwr = SETT_WIFI_PWR_MID") >= 0
+   && settings.indexOf("s_cfg.sleep_s = SETT_SLEEP_OFF") >= 0
+   && page.indexOf('<b id="i-panel">A0</b>') >= 0
+   && page.indexOf('<b id="i-bat">未连接电池</b>') >= 0
+   && js.indexOf('$("i-bat").textContent = "未连接电池"') >= 0);
 ok("R1.1.2 A1MODE default = 1 / max = 2",
    js.indexOf("var A1MODE = 1;") >= 0 && js.indexOf("var A1MODE_MAX = 2;") >= 0);
 ok("R1.1.1 geometry helpers",
@@ -166,8 +173,9 @@ ok("R1.1.0 frame version follows geometry", js.indexOf("(PANEL.w === 800) ? 2 : 
 ok("R1.1.1 DEV_API tri-state + apiAtLeast2()",
    js.indexOf("var DEV_API = 0") >= 0 && js.indexOf("function apiAtLeast2()") >= 0
    && js.indexOf("DEV_API === 0 || DEV_API >= 2") >= 0);
-ok("R1.1.0 a1_mode saved with panel",
-   js.indexOf('fields.a1_mode = $("a1Sel").value') >= 0 && js.indexOf("syncPanelRows") >= 0);
+ok("personal branch locks editor geometry to A0",
+   js.indexOf('PANEL.name = "A0"; PANEL.id = 0; A1MODE = 1;') >= 0
+   && js.indexOf("applyPanelGeom(0, 1)") >= 0);
 // R1.2.0（FB-015）：版本号由 fw/page 两套合并为 MOINK_VERSION 一套；
 //   固件与控制页合并到同一入口 /api/upload，由固件按请求体首块内容嗅探分流。
 ok("R1.2.0 统一升级入口 UI (upFile/upGo/upmsg)",
@@ -191,10 +199,10 @@ ok("R1.2.0 双端同规则嗅探 (sniffKind + readHead, 固件 0xE9 / 页面 <!d
 ok("R1.2.0 固件重启导致响应可能收不到 -> sentAll 兜底",
    js.indexOf("var sentAll = false") >= 0 && js.indexOf("if (isFw && sentAll)") >= 0);
 // R1.1.3（FB-014）：设置项就地保存状态（不再依赖图片页里不可见的 #msg）+ 保存后回读核对
-ok("R1.1.3 就地状态位 3 处 (sleepmsg/apmsg/panelmsg)",
-   page.indexOf('class="savestate" id="sleepmsg"') >= 0
-   && page.indexOf('id="apmsg"') >= 0 && page.indexOf('id="panelmsg"') >= 0
-   && page.indexOf('id="sleepmsg" style="margin:0"') < 0);
+ok("personal branch only hotspot remains editable",
+   page.indexOf('id="apmsg"') >= 0 && page.indexOf('id="sleepmsg"') < 0
+   && page.indexOf('id="panelmsg"') < 0
+   && js.indexOf('var fields = { ssid: $("apSsid").value };') >= 0);
 ok("R1.1.3 就地状态助手 (saveState/readSettings/verifyFields)",
    js.indexOf("function saveState(id, kind, text)") >= 0
    && js.indexOf("function readSettings(cb)") >= 0

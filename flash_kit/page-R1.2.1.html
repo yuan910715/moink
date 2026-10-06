@@ -355,10 +355,10 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
     <div class="infoGrid">
       <div><span>版本</span><b id="i-verD">—</b></div>
       <div><span>接口</span><b id="i-apiD">—</b></div>
-      <div><span>屏幕</span><b id="i-panel">—</b></div>
+      <div><span>屏幕</span><b id="i-panel">A0</b></div>
       <div><span>当前热点</span><b id="i-ssid">—</b></div>
       <div><span>空闲内存</span><b id="i-heap">—</b></div>
-      <div><span>电池</span><b id="i-bat">—</b></div>
+      <div><span>电池</span><b id="i-bat">未连接电池</b></div>
       <div><span>在线设备</span><b id="i-clients">—</b></div>
     </div>
 
@@ -366,26 +366,13 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <summary>休眠与唤醒</summary>
     <div class="row">
       <label>休眠</label>
-      <select id="sleepSel">
-        <option value="60">1 分钟</option>
-        <option value="180">3 分钟</option>
-        <option value="300">5 分钟</option>
-        <option value="0">不休眠</option>
-      </select>
+      <b>不休眠</b>
+      <span class="hint" style="margin:0">此专用版本固定</span>
     </div>
     <div class="row">
       <label>自动唤醒</label>
-      <select id="wakeSel">
-        <option value="0">关闭</option>
-        <option value="3600">每 1 小时</option>
-        <option value="43200">每 12 小时</option>
-        <option value="86400">每 1 天</option>
-      </select>
-      <span class="hint" style="margin:0">醒来开热点等人传图（3 分钟）</span>
-    </div>
-    <div class="row">
-      <button class="mini" id="saveSleep">保存休眠设置</button>
-      <span class="savestate" id="sleepmsg"></span>
+      <b>关闭</b>
+      <span class="hint" style="margin:0">此专用版本固定</span>
     </div>
     </details>
 
@@ -405,12 +392,8 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
     </div>
     <div class="row">
       <label>WiFi 功率</label>
-      <select id="wifiPwrSel">
-        <option value="0">高（18dBm）</option>
-        <option value="1">中（10dBm，默认）</option>
-        <option value="2">低（8.5dBm）</option>
-      </select>
-      <span class="hint" style="margin:0">连不上/传输不稳时再调低</span>
+      <b>中（10dBm）</b>
+      <span class="hint" style="margin:0">此专用版本固定</span>
     </div>
     <div class="row"><button class="mini" id="saveAp">保存热点设置</button><span class="savestate" id="apmsg"></span></div>
     </details>
@@ -419,17 +402,9 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <summary>屏幕设置</summary>
     <div class="row">
       <label>屏幕</label>
-      <select id="panelSel"><option value="0">A0</option><option value="1">A1</option></select>
+      <b>A0</b>
+      <span class="hint" style="margin:0">此专用版本固定</span>
     </div>
-    <div class="row" id="a1Row" style="display:none">
-      <label>A1 驱动</label>
-      <select id="a1Sel">
-        <option value="1">768×552 顺序</option>
-        <option value="2">方案A 原生800×600</option>
-      </select>
-    </div>
-    <div class="row"><label><input type="checkbox" id="hflip"> 左右镜像</label></div>
-    <div class="row"><button class="mini" id="savePanel">保存</button><span class="savestate" id="panelmsg"></span></div>
     </details>
 
     <details>
@@ -2031,37 +2006,26 @@ function refreshInfo(){
     }
     $("i-apiD").textContent = j.api != null ? j.api : "—";
     if (j.api != null) DEV_API = +j.api || 1;
-    $("i-panel").textContent = j.panel || "—";
+    $("i-panel").textContent = "A0";
     $("i-ssid").textContent = j.ssid || "—";
     $("i-heap").textContent = j.heap != null ? (j.heap/1024).toFixed(0) + " KB" : "—";
-    $("i-bat").textContent = (j.bat_mv > 0) ? (j.bat_mv/1000).toFixed(2) + " V" : "未连接";
+    $("i-bat").textContent = "未连接电池";
     $("i-clients").textContent = j.clients != null ? j.clients : "—";
     var ok = (j.ssid != null);
     $("conn").textContent = ok ? ("已连接 · " + j.ssid) : "未连接";
     $("conn").classList.toggle("ok", ok);
-    if (j.panel) PANEL.name = j.panel;
-    if (j.panel === "A1") PANEL.id = 1; else PANEL.id = 0;
-    /* 设备实际在用的 A1 驱动模式决定帧几何（旧固件无 a1_mode -> 恒 768x552）。 */
-    if (j.a1_mode != null) A1MODE = clamp(+j.a1_mode || 1, 1, A1MODE_MAX);
-    if (applyPanelGeom(PANEL.id, A1MODE)) onGeomChanged();
-    syncPanelRows();
+    PANEL.name = "A0"; PANEL.id = 0; A1MODE = 1;
+    if (applyPanelGeom(0, 1)) onGeomChanged();
   }).catch(function(){ $("conn").textContent = LOCAL_PREVIEW ? "本地预览（未连设备）" : "未连接"; });
 }
 function loadSettings(){
   fetch(api("/api/settings")).then(function(r){ return r.json(); }).then(function(s){
-    $("sleepSel").value = String(s.sleep_s);
-    $("wakeSel").value = String(s.wake_s);
     $("apSsid").value = s.ssid || "";
     $("apPass").placeholder = s.pass_set ? "已设置（留空 = 保持当前密码）" : "留空 = 开放热点";
     $("apClearRow").style.display = s.pass_set ? "" : "none";
     $("apClearPw").checked = false;
-    $("panelSel").value = String(s.panel);
-    if (s.a1_mode != null) A1MODE = clamp(+s.a1_mode || 1, 1, A1MODE_MAX);
-    $("a1Sel").value = String(A1MODE);
-    $("wifiPwrSel").value = String(s.wifi_pwr || 0);
-    syncPanelRows();
-    if (applyPanelGeom(+s.panel, A1MODE)) onGeomChanged();
-    $("hflip").checked = !!s.hflip;
+    PANEL.name = "A0"; PANEL.id = 0; A1MODE = 1;
+    if (applyPanelGeom(0, 1)) onGeomChanged();
   }).catch(function(){});
 }
 /* ---------- 设置就地保存状态（R1.1.3，FB-014）----------
@@ -2145,15 +2109,10 @@ function postSettings(fields, done, stateId, note){
     });
   });
 }
-/* 休眠/唤醒改为显式保存（不再随下拉框变更即时保存） */
-$("saveSleep").addEventListener("click", function(){
-  postSettings({ sleep_s: $("sleepSel").value, wake_s: $("wakeSel").value },
-               function(){ loadSettings(); }, "sleepmsg");
-});
 $("saveAp").addEventListener("click", function(){
   /* FB-014①：pass 按需携带 —— 留空 = 不携带（固件保持当前密码）；
      勾选「清除密码」= 显式发空串（热点转开放）。 */
-  var fields = { ssid: $("apSsid").value, wifi_pwr: $("wifiPwrSel").value };
+  var fields = { ssid: $("apSsid").value };
   if ($("apClearPw").checked) fields.pass = "";
   else if ($("apPass").value) fields.pass = $("apPass").value;
   postSettings(fields, function(){
@@ -2161,12 +2120,6 @@ $("saveAp").addEventListener("click", function(){
     refreshInfo(); loadSettings();
   }, "apmsg");
 });
-function syncPanelRows(){
-  var p = $("panelSel").value;
-  /* A1 驱动模式仅对 A1 且固件 api >= 2 时可调（api=1 的固件没有这套写入路径）。 */
-  var showA1 = (p === "1") && apiAtLeast2();
-  $("a1Row").style.display = showA1 ? "" : "none";
-}
 /* 编辑空间几何切换后的重排：画布尺寸 / 对象手柄 / 预览全部跟着换。 */
 function onGeomChanged(){
   liveBase = null;
@@ -2174,22 +2127,6 @@ function onGeomChanged(){
   try { layoutObjs(); } catch(e){}
   schedulePreview(false);
 }
-$("panelSel").addEventListener("change", syncPanelRows);
-$("savePanel").addEventListener("click", function(){
-  var p = $("panelSel").value;
-  var fields = { panel: p, hflip: $("hflip").checked ? 1 : 0 };
-  if (p === "1" && apiAtLeast2()) fields.a1_mode = $("a1Sel").value;
-  /* api=1 的旧固件收不了 a1_mode，别谎报「已生效」 */
-  var note = (p === "1" && DEV_API === 1)
-    ? "✓ 已保存（当前固件 api=1 不支持 A1 档位，本次未改驱动模式）" : "";
-  postSettings(fields, function(){
-    PANEL.id = +p;
-    if (p === "1" && apiAtLeast2()) A1MODE = clamp(+$("a1Sel").value, 1, A1MODE_MAX);
-    if (applyPanelGeom(PANEL.id, A1MODE)) onGeomChanged();
-    refreshInfo();
-  }, "panelmsg", note);
-});
-
 /* ---------- 维护 ---------- */
 /* ---------- 统一升级入口（R1.2.0，FB-015）----------
    固件与控制页走同一条 /api/upload，由固件按请求体首块内容嗅探分流，用户不需要

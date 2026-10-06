@@ -15,7 +15,7 @@ static const moink_settings_t DEFAULTS = {
     .hflip    = 0,
     .a1_mode  = EPD_A1_MODE_DEFAULT,
     .wifi_pwr = SETT_WIFI_PWR_MID,
-    .sleep_s  = SETT_SLEEP_3MIN,
+    .sleep_s  = SETT_SLEEP_OFF,
     .wake_s   = SETT_WAKE_OFF,
     .ap_ssid  = "",
     .ap_pass  = "",
@@ -72,6 +72,14 @@ void settings_init(void)
     if (s_cfg.a1_mode < EPD_A1_MODE_SEQ552 || s_cfg.a1_mode > EPD_A1_MODE_NATIVE800)
         s_cfg.a1_mode = EPD_A1_MODE_DEFAULT;
     if (s_cfg.hflip) s_cfg.hflip = 1;
+
+    /* 个人专用版：这些硬件参数不在配置页开放，旧 NVS 也不得覆盖固定值。 */
+    s_cfg.panel = EPD_PANEL_A0;
+    s_cfg.hflip = 0;
+    s_cfg.a1_mode = EPD_A1_MODE_DEFAULT;
+    s_cfg.wifi_pwr = SETT_WIFI_PWR_MID;
+    s_cfg.sleep_s = SETT_SLEEP_OFF;
+    s_cfg.wake_s = SETT_WAKE_OFF;
 
     ESP_LOGI(TAG, "panel=%u hflip=%u a1_mode=%u sleep=%lus wake=%lus ssid='%s' open=%d",
              s_cfg.panel, s_cfg.hflip, s_cfg.a1_mode,
