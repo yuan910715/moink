@@ -2,8 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="moink-page-version" content="R1.2.1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="moink-page-version" content="R1.2.3">
 <title>墨印 · MoInk</title>
 <style>
 /* ===== Cropper.js v1.6.2 | MIT | https://github.com/fengyuanchen/cropperjs ===== */
@@ -19,7 +19,7 @@
 :root{ --bg:#faf7f2; --card:#fff; --line:#eee6da; --ink:#2b2620; --mut:#9a8f7d;
        --acc:#e07a3f; --acc2:#3f7d6b; --ok:#2e7d4f; --err:#c0392b; }
 *{ box-sizing:border-box; }
-html,body{ margin:0; padding:0; }
+html,body{ margin:0; padding:0; touch-action:pan-x pan-y; }
 body{ background:var(--bg); color:var(--ink);
       font-family:-apple-system,'PingFang SC','Microsoft YaHei','Noto Sans CJK SC',sans-serif;
       font-size:15px; line-height:1.55; -webkit-text-size-adjust:100%; }
@@ -78,6 +78,9 @@ button:disabled{ opacity:.45; cursor:default; }
 .infoGrid>div{ background:#faf6ee; border-radius:10px; padding:8px 11px; }
 .infoGrid span{ display:block; font-size:11px; color:var(--mut); }
 .infoGrid b{ font-size:13.5px; }
+.testGrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:10px 0; }
+.testGrid button{ width:100%; padding:9px 6px; }
+@media (max-width:420px){ .testGrid{ grid-template-columns:repeat(2,1fr); } }
 #editorGrid{ min-width:0; }
 #editLeft,#editRight{ min-width:0; }
 @media (min-width:900px){
@@ -95,6 +98,7 @@ input[type=text],input[type=password],input[type=number],select,textarea{
   padding:8px 10px; background:#fff; color:var(--ink); }
 textarea{ width:100%; min-height:84px; resize:vertical; }
 input[type=range]{ flex:1; min-width:120px; }
+#rotRange{ touch-action:pan-y; }
 input[type=file]{ font-size:13px; }
 #drop{ position:relative; overflow:hidden; border:2px dashed var(--line); border-radius:14px;
        padding:26px 16px; text-align:center; color:var(--mut); cursor:pointer; }
@@ -111,6 +115,12 @@ input[type=file]{ font-size:13px; }
 #fname{ font-size:12px; color:var(--mut); flex:1; word-break:break-all; }
 #cropWrap{ margin:10px 0; border-radius:12px; overflow:hidden; background:#eee6da; }
 #cropImg{ display:block; max-width:100%; }
+#cropDone{ position:fixed; right:max(16px,calc((100vw - 640px)/2 + 16px));
+           bottom:calc(18px + env(safe-area-inset-bottom)); z-index:900; display:none;
+           align-items:center; gap:6px; padding:11px 17px; border-radius:999px;
+           background:var(--acc2); box-shadow:0 4px 16px rgba(43,38,32,.24); }
+#cropDone.show{ display:inline-flex; }
+@media (min-width:700px){ #cropDone{ display:none!important; } }
 #prevWrap{ position:relative; width:fit-content; max-width:100%; margin:10px auto; }
 #objLayer{ position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; overflow:hidden; }
 .tobj{ position:absolute; pointer-events:auto; cursor:move; white-space:pre-wrap;
@@ -173,6 +183,16 @@ body.workLocked > :not(#workLoading){ pointer-events:none!important; user-select
 .stat .k{ color:var(--mut); }
 details{ margin:10px 0; }
 details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--ink); }
+.epdIntroText{ margin-top:10px; color:var(--ink); font-size:13px; line-height:1.8; }
+.epdIntroText p{ margin:0 0 10px; }
+.epdIntroText p:last-child{ margin-bottom:0; }
+.ditherDemo{ margin:12px 0; padding:12px; border:1px solid var(--line); border-radius:12px;
+             background:#faf6ee; }
+.ditherDemo b{ display:block; margin-bottom:4px; font-size:13.5px; }
+.ditherDemo .hint{ margin:0 0 9px; line-height:1.65; }
+.ditherDemo button{ width:100%; }
+.ditherDemo .demoWarn{ margin:8px 0 0; color:#a5701a; }
+.ditherDemo .row{ margin:8px 0 0; }
 .slider{ display:flex; align-items:center; gap:10px; margin:6px 0; }
 .slider label{ font-size:12.5px; color:var(--mut); width:78px; flex-shrink:0; }
 .slider output{ font-size:12px; color:var(--mut); width:44px; text-align:right; }
@@ -223,8 +243,8 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
         <input type="file" id="file" accept="image/*" aria-label="选择图片">
       </div>
       <div id="browserFallback">
-        <div class="hint">当前弹出页无法选择照片，请转到系统自带浏览器打开192.168.4.1继续。</div>
-        <a id="openBrowser" href="intent://192.168.4.1/#Intent;scheme=http;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url=http%3A%2F%2F192.168.4.1%2F;end">在系统浏览器中选择照片</a>
+        <div class="hint">当前弹出页无法选择照片，请转到系统自带浏览器打开 http://192.168.4.1 继续。</div>
+        <a id="openBrowser" href="intent://192.168.4.1/#Intent;scheme=http;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url=http%3A%2F%2F192.168.4.1%2F;end">在系统浏览器中打开 http://192.168.4.1</a>
       </div>
       <div id="filerow" style="display:none">
         <img id="thumb" alt="">
@@ -239,6 +259,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
           <button class="mini" id="rotStep">&#8635; 90&deg;</button>
           <button class="mini" id="cropMax">铺满</button>
           <button class="mini" id="cropCenter">居中</button>
+          <button class="mini" id="cropReset">重置</button>
         </div>
         <div class="slider">
           <label>旋转</label>
@@ -247,6 +268,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
         </div>
         <div class="hint">双指捏合缩放、拖动移动图片；角度接近 90&deg; 整数倍自动贴合。</div>
       </div>
+      <button id="cropDone" type="button" aria-label="完成裁剪并继续设置">裁剪完成&nbsp;↓</button>
     </div>
 
       <div id="styleCard">
@@ -345,6 +367,22 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
   </div></div>
   </section>
 
+  <details class="card" id="epdIntro">
+    <summary>了解四色墨水屏</summary>
+    <div class="epdIntroText">
+      <p>这块墨水屏分辨率为768×552，每个像素只能直接显示黑、白、红、黄四种颜色。屏幕内部含有带电的微小颜料颗粒，驱动板通过不同方向、强度和持续时间的电压波形，让相应颜色移动到屏幕表面。它依靠环境光反射显示，没有液晶屏那样的背光，因此在光线充足时更接近纸张。</p>
+      <p>照片中的灰色、橙色、肤色和其他中间色，并不是屏幕产生了新的颜色。页面会使用“画面抖动”算法，把黑、白、红、黄像素按照一定规律交错排列，利用人眼的空间混色效应，从正常观看距离模拟更多色调。</p>
+      <div class="ditherDemo">
+        <b>亲眼看看四色如何模拟更多颜色</b>
+        <div class="hint">点击下方按钮，墨水屏将显示一张抖动色阶示例图。近距离观察，可以清楚看到每个像素仍然只有黑、白、红、黄；稍微拉远观看，密集的四色点阵就会融合成灰色、米黄色、粉红色、橙色和暖肤色等视觉效果。</div>
+        <button class="sec" id="ditherDemoBtn">显示抖动色阶示例</button>
+        <div class="hint demoWarn">点击后会覆盖屏幕当前画面，并触发一次完整刷新。体验结束后，重新上传原来的图片即可恢复。</div>
+        <div class="row"><span class="savestate" id="ditherDemoMsg"></span></div>
+      </div>
+      <p>墨水屏刷新时可能反复闪白、闪黑或短暂出现杂乱颜色，这是驱动波形在清除旧画面、移动颜料颗粒并写入新画面。四色屏的完整刷新通常需要十几秒到几十秒；请等待刷新完全结束后再观察示例图。</p>
+      <p>墨水屏具有“双稳态”特性：颜料颗粒移动到位后，不需要供电也能保持画面。因此仅在需要更换画面时，才需要供电。</p>
+    </div>
+  </details>
 
   </div><!-- /tab-image -->
 
@@ -402,6 +440,21 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <b>A0</b>
       <span class="hint" style="margin:0">此专用版本固定</span>
     </div>
+    </details>
+
+    <details id="screenTest">
+      <summary>屏幕自检</summary>
+      <div class="hint">测试帧由页面直接生成，不经过选图、裁剪、旋转、调色或抖动。每次请等待屏幕完全刷新后再选择下一项。</div>
+      <div class="testGrid" id="screenTestButtons">
+        <button class="mini epdTest" data-test="white">纯白</button>
+        <button class="mini epdTest" data-test="black">纯黑</button>
+        <button class="mini epdTest" data-test="red">纯红</button>
+        <button class="mini epdTest" data-test="yellow">纯黄</button>
+        <button class="mini epdTest" data-test="grid">边框网格</button>
+        <button class="mini epdTest" data-test="checker">四色棋盘</button>
+      </div>
+      <div class="hint">推荐顺序：白 → 黑 → 红 → 黄 → 白 → 边框网格 → 四色棋盘。纯白也可用于测试结束后恢复白屏。</div>
+      <div class="row"><span class="savestate" id="screenTestMsg"></span></div>
     </details>
 
     <details>
@@ -932,42 +985,42 @@ function objMetrics(o, s){
   for (j = 0; j < lines.length; j++) mw = Math.max(mw, mc.measureText(lines[j]).width);
   return { lines:lines, mw:mw, blockH:blockH, lh:lh, pX:sz*0.28, pY:sz*0.18 };
 }
+function drawObj(ctx, o, cw, measured){
+  var t = String(o.text == null ? "" : o.text);
+  if (!t.replace(/\s+$/, "")) return;
+  var s = cw / EW;
+  var m = measured || objMetrics(o, s);
+  if (!m.lines.length) return;
+  ctx.save();
+  ctx.translate((+o.x||0)*s, (+o.y||0)*s);
+  ctx.rotate((+o.rot||0)*Math.PI/180);
+  var f = FONTS[clamp(+o.font|0, 0, FONTS.length-1)];
+  var sz = Math.max(6, (+o.size||48)*s);
+  ctx.font = f.w + " " + sz + "px " + f.css;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  if (+o.bg >= 1){
+    var bgp = PAL[[1, 0, 2, 3][+o.bg - 1]];   /* R1.0.19 四色底：1白 2黑 3黄 4红 */
+    ctx.fillStyle = "rgb(" + bgp[0] + "," + bgp[1] + "," + bgp[2] + ")";
+    ctx.fillRect(-m.mw/2 - m.pX, -m.blockH/2 - m.pY, m.mw + m.pX*2, m.blockH + m.pY*2);
+  }
+  var fg = PAL[clamp(+o.color|0, 0, 3)];
+  var sw = clamp(+o.stroke||0, 0, 10) * s;
+  for (var j = 0; j < m.lines.length; j++){
+    var yy = -m.blockH/2 + m.lh/2 + j*m.lh;
+    if (sw > 0){
+      ctx.lineWidth = sw*2; ctx.lineJoin = "round";
+      var sp = PAL[clamp(+o.strokeC|0, 0, 3)];   /* R1.0.19 四色描边 */
+      ctx.strokeStyle = "rgb(" + sp[0] + "," + sp[1] + "," + sp[2] + ")";
+      ctx.strokeText(m.lines[j], 0, yy);
+    }
+    ctx.fillStyle = "rgb("+fg[0]+","+fg[1]+","+fg[2]+")";
+    ctx.fillText(m.lines[j], 0, yy);
+  }
+  ctx.restore();
+}
 function drawObjs(ctx, objs, cw, ch){
   if (!objs || !objs.length) return;
-  var s = cw / EW, i;
-  for (i = 0; i < objs.length; i++){
-    var o = objs[i];
-    var t = String(o.text == null ? "" : o.text);
-    if (!t.replace(/\s+$/, "")) continue;
-    var m = objMetrics(o, s);
-    if (!m.lines.length) continue;
-    ctx.save();
-    ctx.translate((+o.x||0)*s, (+o.y||0)*s);
-    ctx.rotate((+o.rot||0)*Math.PI/180);
-    var f = FONTS[clamp(+o.font|0, 0, FONTS.length-1)];
-    var sz = Math.max(6, (+o.size||48)*s);
-    ctx.font = f.w + " " + sz + "px " + f.css;
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    if (+o.bg >= 1){
-      var bgp = PAL[[1, 0, 2, 3][+o.bg - 1]];   /* R1.0.19 四色底：1白 2黑 3黄 4红 */
-      ctx.fillStyle = "rgb(" + bgp[0] + "," + bgp[1] + "," + bgp[2] + ")";
-      ctx.fillRect(-m.mw/2 - m.pX, -m.blockH/2 - m.pY, m.mw + m.pX*2, m.blockH + m.pY*2);
-    }
-    var fg = PAL[clamp(+o.color|0, 0, 3)];
-    var sw = clamp(+o.stroke||0, 0, 10) * s;
-    for (var j = 0; j < m.lines.length; j++){
-      var yy = -m.blockH/2 + m.lh/2 + j*m.lh;
-      if (sw > 0){
-        ctx.lineWidth = sw*2; ctx.lineJoin = "round";
-        var sp = PAL[clamp(+o.strokeC|0, 0, 3)];   /* R1.0.19 四色描边 */
-        ctx.strokeStyle = "rgb(" + sp[0] + "," + sp[1] + "," + sp[2] + ")";
-        ctx.strokeText(m.lines[j], 0, yy);
-      }
-      ctx.fillStyle = "rgb("+fg[0]+","+fg[1]+","+fg[2]+")";
-      ctx.fillText(m.lines[j], 0, yy);
-    }
-    ctx.restore();
-  }
+  for (var i = 0; i < objs.length; i++) drawObj(ctx, objs[i], cw);
 }
 function toBuf(canvas){
   var w = canvas.width, h = canvas.height;
@@ -1080,23 +1133,33 @@ function renderTo(cv, cw, ch){
   ctx.putImageData(im, 0, 0);
   return idx;
 }
-/* ---------- 拖动实时重绘（Fabric 模式：画布唯一视觉源，DOM 只剩手柄） ---------- */
-var liveBase = null, liveRaf = 0;
-function renderBase(cw, ch){
+/* ---------- 拖动实时重绘（缓存图片与未选中文字，每帧只画当前文字） ---------- */
+var liveBase = null, liveMetric = null, liveRaf = 0;
+function renderLiveBase(cw, ch, skipIndex){
   var cv = document.createElement("canvas");
   cv.width = cw; cv.height = ch;
-  var ctx = cv.getContext("2d", { willReadFrequently: true });
+  var ctx = cv.getContext("2d");
   drawBase(ctx, cw, ch);
-  return ctx.getImageData(0, 0, cw, ch);
+  var objs = (MODE === 0 && !cfg.textOn) ? [] : curObjs();
+  for (var i = 0; i < objs.length; i++){
+    if (i !== skipIndex) drawObj(ctx, objs[i], cw);
+  }
+  return cv;
 }
 function liveDraw(){
   liveRaf = 0;
   if (!liveBase) return;
   /* 指针事件可能高于屏幕刷新率；DOM 几何与画布统一在 RAF 中各更新一次。 */
-  if (od) relayoutOne(od.i, od.act === "m" || od.act === "r");
+  if (od) relayoutOne(od.i, od.act === "m" || od.act === "r", od.scale);
   var ctx = prevEl.getContext("2d");
-  ctx.putImageData(liveBase, 0, 0);
-  drawObjs(ctx, (MODE === 0 && !cfg.textOn) ? [] : curObjs(), prevEl.width, prevEl.height);  /* R1.0.17 */
+  ctx.drawImage(liveBase, 0, 0);
+  if (od){
+    var o = curObjs()[od.i];
+    if (o){
+      if (od.act === "s" || od.act === "wl") liveMetric = objMetrics(o, prevEl.width / EW);
+      drawObj(ctx, o, prevEl.width, liveMetric);
+    }
+  }
 }
 function scheduleLive(){
   if (!liveRaf && liveBase) liveRaf = requestAnimationFrame(liveDraw);
@@ -1105,9 +1168,11 @@ function startLive(){
   clearTimeout(previewTimer); previewWant = null;  /* 挂起排队的预览，拖动期间画布归实时重绘管 */
   try {
     prevEl.width = EW; prevEl.height = EH;
-    liveBase = renderBase(EW, EH);
+    liveBase = renderLiveBase(EW, EH, od ? od.i : -1);
+    var o = od && curObjs()[od.i];
+    liveMetric = o ? objMetrics(o, 1) : null;
     liveDraw();
-  } catch(e){ liveBase = null; }
+  } catch(e){ liveBase = null; liveMetric = null; }
 }
 
 /* 竖屏桥接：编辑空间(552x768 或 600x800)顺时针转 90° → 设备帧(768x552 或 800x600)。
@@ -1168,10 +1233,148 @@ function frameWithHeader(payload){
   return out;
 }
 
+/* ---------- 屏幕自检：直接生成设备方向索引帧，绕过照片处理管线 ---------- */
+function testFillRect(idx, x0, y0, x1, y1, color){
+  var W = PANEL.w, H = PANEL.h;
+  x0 = clamp(Math.round(x0), 0, W - 1); x1 = clamp(Math.round(x1), 0, W - 1);
+  y0 = clamp(Math.round(y0), 0, H - 1); y1 = clamp(Math.round(y1), 0, H - 1);
+  if (x1 < x0 || y1 < y0) return;
+  for (var y = y0; y <= y1; y++) idx.fill(color, y * W + x0, y * W + x1 + 1);
+}
+function buildScreenTestIdx(kind){
+  var W = PANEL.w, H = PANEL.h, idx = new Uint8Array(W * H);
+  var solid = { black:C_K, white:C_W, yellow:C_Y, red:C_R };
+  if (Object.prototype.hasOwnProperty.call(solid, kind)){
+    idx.fill(solid[kind]);
+    return idx;
+  }
+  if (kind === "checker"){
+    var cs = [C_K, C_W, C_Y, C_R], block = 8;
+    for (var y = 0; y < H; y++){
+      var row = y * W, by = Math.floor(y / block);
+      for (var x = 0; x < W; x++) idx[row + x] = cs[(Math.floor(x / block) + by) & 3];
+    }
+    return idx;
+  }
+  if (kind === "grid"){
+    idx.fill(C_W);
+    var borders = [[0,C_K], [2,C_R], [4,C_Y], [6,C_K]];
+    for (var b = 0; b < borders.length; b++){
+      var o = borders[b][0], c = borders[b][1];
+      testFillRect(idx, o, o, W - 1 - o, o, c);
+      testFillRect(idx, o, H - 1 - o, W - 1 - o, H - 1 - o, c);
+      testFillRect(idx, o, o, o, H - 1 - o, c);
+      testFillRect(idx, W - 1 - o, o, W - 1 - o, H - 1 - o, c);
+    }
+    for (var gx = 48; gx < W; gx += 48)
+      testFillRect(idx, gx, 8, gx, H - 9, ((gx / 48) & 1) ? C_Y : C_R);
+    for (var gy = 48; gy < H; gy += 48)
+      testFillRect(idx, 8, gy, W - 9, gy, ((gy / 48) & 1) ? C_Y : C_R);
+    testFillRect(idx, Math.floor(W/2) - 1, 8, Math.floor(W/2) + 1, H - 9, C_K);
+    testFillRect(idx, 8, Math.floor(H/2) - 1, W - 9, Math.floor(H/2) + 1, C_K);
+    var m = 72;
+    testFillRect(idx, 12, 12, 12 + m - 1, 12 + m - 1, C_K);
+    testFillRect(idx, W - 12 - m, 12, W - 13, 12 + m - 1, C_R);
+    testFillRect(idx, 12, H - 12 - m, 12 + m - 1, H - 13, C_Y);
+    testFillRect(idx, W - 12 - m, H - 12 - m, W - 13, H - 13, C_K);
+    testFillRect(idx, W - 36, H - 36, W - 13, H - 13, C_W);
+    return idx;
+  }
+  throw new Error("unknown screen test: " + kind);
+}
+function buildScreenTestFrame(kind){
+  return frameWithHeader(packIdx(buildScreenTestIdx(kind)));
+}
+
+/* ---------- 四色抖动原理演示：设备方向 768x552，所有像素最终仍为 K/W/Y/R ---------- */
+var DITHER_BAYER8 = [
+  [0,48,12,60,3,51,15,63], [32,16,44,28,35,19,47,31],
+  [8,56,4,52,11,59,7,55], [40,24,36,20,43,27,39,23],
+  [2,50,14,62,1,49,13,61], [34,18,46,30,33,17,45,29],
+  [10,58,6,54,9,57,5,53], [42,26,38,22,41,25,37,21]
+];
+function ditherDemoMix(idx, x0, y0, x1, y1, first, second, amount){
+  var W = PANEL.w, limit = Math.round(clamp(amount, 0, 1) * 64);
+  for (var y = y0; y <= y1; y++){
+    var row = y * W;
+    for (var x = x0; x <= x1; x++)
+      idx[row + x] = DITHER_BAYER8[y & 7][x & 7] < limit ? second : first;
+  }
+}
+function ditherDemoGradient(idx, y, first, second){
+  var x0 = 150, x1 = 751, y0 = y, y1 = y + 72, steps = 16, width = x1 - x0 + 1;
+  for (var i = 0; i < steps; i++){
+    var left = x0 + Math.round(width * i / steps);
+    var right = x0 + Math.round(width * (i + 1) / steps) - 1;
+    ditherDemoMix(idx, left, y0, right, y1, first, second, i / (steps - 1));
+  }
+  testFillRect(idx, x0 - 1, y0 - 1, x1 + 1, y0 - 1, C_K);
+  testFillRect(idx, x0 - 1, y1 + 1, x1 + 1, y1 + 1, C_K);
+  testFillRect(idx, x0 - 1, y0 - 1, x0 - 1, y1 + 1, C_K);
+  testFillRect(idx, x1 + 1, y0 - 1, x1 + 1, y1 + 1, C_K);
+}
+function buildDitherDemoBaseIdx(){
+  if (PANEL.w !== 768 || PANEL.h !== 552) throw new Error("示例图仅适用于 768×552 屏幕");
+  var idx = new Uint8Array(PANEL.w * PANEL.h);
+  idx.fill(C_W);
+
+  var swatches = [C_K, C_W, C_R, C_Y];
+  for (var s = 0; s < swatches.length; s++){
+    var sx = 21 + s * 186;
+    testFillRect(idx, sx, 57, sx + 149, 110, swatches[s]);
+  }
+  ditherDemoGradient(idx, 133, C_W, C_K);
+  ditherDemoGradient(idx, 232, C_W, C_Y);
+  ditherDemoGradient(idx, 331, C_W, C_R);
+  ditherDemoGradient(idx, 430, C_Y, C_R);
+  return idx;
+}
+function buildDitherDemoIdx(){
+  var idx = buildDitherDemoBaseIdx(), W = PANEL.w, H = PANEL.h;
+  var cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  var ctx = cv.getContext("2d", { willReadFrequently:true });
+  var im = ctx.createImageData(W, H), dd = im.data;
+  for (var i = 0; i < idx.length; i++){
+    var p = PAL[idx[i]], o = i * 4;
+    dd[o] = p[0]; dd[o+1] = p[1]; dd[o+2] = p[2]; dd[o+3] = 255;
+  }
+  ctx.putImageData(im, 0, 0);
+  var family = "-apple-system,'PingFang SC','Microsoft YaHei','Noto Sans CJK SC',sans-serif";
+  function demoText(text, x, y, size, color, align, baseline, weight){
+    ctx.font = (weight || 600) + " " + size + "px " + family;
+    ctx.fillStyle = color || "#000";
+    ctx.textAlign = align || "left";
+    ctx.textBaseline = baseline || "alphabetic";
+    ctx.fillText(text, x, y);
+  }
+  demoText("四色抖动色阶", 384, 8, 34, "#000", "center", "top", 700);
+  var swatchNames = ["黑", "白", "红", "黄"];
+  for (var s = 0; s < 4; s++)
+    demoText(swatchNames[s], 96 + s * 186, 84, 23, (s === 0 || s === 2) ? "#fff" : "#000", "center", "middle", 700);
+  var routes = ["白 → 黑", "白 → 黄", "白 → 红", "黄 → 红"];
+  for (var l = 0; l < routes.length; l++){
+    var ly = 133 + l * 99;
+    demoText(routes[l], 16, ly + 36, 34, "#000", "left", "middle", 700);
+  }
+  demoText("所有色调仍然只由黑、白、红、黄像素组成", 384, 538, 20, "#000", "center", "bottom", 700);
+
+  var rendered = ctx.getImageData(0, 0, W, H).data;
+  for (var j = 0; j < idx.length; j++) idx[j] = snapIdx(rendered[j*4], rendered[j*4+1], rendered[j*4+2]);
+  return idx;
+}
+function buildDitherDemoFrame(){
+  return frameWithHeader(packIdx(buildDitherDemoIdx()));
+}
+
 /* ==================================================================
    DOM 与状态
    ================================================================== */
 var $ = function(id){ return document.getElementById(id); };
+/* 禁止浏览器缩放整页；Cropper 仍通过 touch 事件处理图片区内的双指缩放。 */
+function stopViewportGesture(e){ e.preventDefault(); }
+document.addEventListener("gesturestart", stopViewportGesture, { passive:false });
+document.addEventListener("gesturechange", stopViewportGesture, { passive:false });
 var fileEl = $("file"), coreEl = $("core"), dmodeEl = $("dmode");
 var levelsEl = $("levels"), spaceEl = $("space");
 var cropImgEl = $("cropImg"), objLayerEl = $("objLayer"), prevWrapEl = $("prevWrap");
@@ -1179,6 +1382,26 @@ var prevEl = $("prev"), goEl = $("go"), msgEl = $("msg");
 var barEl = $("bar"), fillEl = $("fill"), statHintEl = $("stathint");
 var dropEl = $("drop"), txtEl = $("txt");
 var workLoadingEl = $("workLoading"), workLoadingTextEl = $("workLoadingText");
+var cropDoneEl = $("cropDone"), cropDoneDismissed = false, cropDoneRaf = 0;
+
+function updateCropDone(){
+  cropDoneRaf = 0;
+  var r = $("cropCard").getBoundingClientRect();
+  var inView = r.bottom > 72 && r.top < window.innerHeight - 56;
+  if (!inView) cropDoneDismissed = false;
+  cropDoneEl.classList.toggle("show", MODE === 0 && !!img && inView && !cropDoneDismissed);
+}
+function scheduleCropDone(){
+  if (cropDoneRaf) return;
+  cropDoneRaf = requestAnimationFrame(updateCropDone);
+}
+cropDoneEl.addEventListener("click", function(){
+  cropDoneDismissed = true;
+  cropDoneEl.classList.remove("show");
+  try { $("styleCard").scrollIntoView({ behavior:"smooth", block:"start" }); }
+  catch(e){ window.scrollTo(0, $("styleCard").offsetTop); }
+});
+window.addEventListener("scroll", scheduleCropDone, { passive:true });
 
 function showWorkLoading(text){
   workLoadingTextEl.textContent = text || "正在处理…";
@@ -1356,6 +1579,7 @@ function setMode(m, silent){
   saveCfg();
   schedulePreview(false);
   updateSteps();
+  scheduleCropDone();
 }
 document.querySelectorAll("#modes button").forEach(function(b){
   b.addEventListener("click", function(){ setMode(+b.dataset.m); });
@@ -1363,6 +1587,7 @@ document.querySelectorAll("#modes button").forEach(function(b){
 
 /* ---------- 裁剪（Cropper.js v1.6.2 内嵌：捏合缩放 / 自由旋转 / 90° 自动贴合） ---------- */
 var cr = null, crReady = false;
+var cropBaseRot = 0;   /* Cropper 兜底处理 EXIF 时的固有角度；用户角度 curRot 始终相对此值。 */
 function rotSnap(a){
   var m = mod(a, 90);
   if (m >= 87) return a + (90 - m);
@@ -1378,14 +1603,21 @@ function initCrop(){
   $("rotRange").value = curRot;
   $("o-rot").textContent = curRot;
   cropImgEl.src = img.src;
+  var needsExif = !!imgNeedsCropperOrientation;
   cr = new Cropper(cropImgEl, {
     aspectRatio: contentAR(), viewMode: 1, dragMode: "move",
-    autoCropArea: 1, checkOrientation: true,
-    rotatable: true, zoomable: true, zoomOnTouch: true, zoomOnWheel: true,
+    autoCropArea: 1, checkOrientation: needsExif,
+    rotatable: true, scalable: needsExif,
+    zoomable: true, zoomOnTouch: true, zoomOnWheel: true,
     cropBoxMovable: true, cropBoxResizable: true, toggleDragModeOnDblclick: false,
     ready: function(){
       crReady = true;
-      if (curRot){ try { cr.rotate(curRot); } catch(e){} }
+      /* 正常路径的图片已烤正，base=0；仅烤制失败的兜底路径保留 Cropper 读出的 EXIF 固有角度。 */
+      try {
+        var d = cr.getData();
+        cropBaseRot = Number(d && d.rotate) || 0;
+        cr.rotateTo(cropBaseRot + curRot);
+      } catch(e){ cropBaseRot = 0; }
       crCropMax();
       schedulePreview(false);
     },
@@ -1394,6 +1626,7 @@ function initCrop(){
   });
 }
 function destroyCrop(){
+  cropBaseRot = 0;
   if (!cr) return;
   try { cr.destroy(); } catch(e){}
   cr = null; crReady = false; cropInvalid();
@@ -1406,9 +1639,8 @@ function setRot(a){
   a = clamp(Math.round(a), -180, 180);
   a = rotSnap(a);
   if (a === curRot){ syncRotUI(); return; }
-  var d = a - curRot;
   curRot = a; cfg.cropRot = a; syncRotUI(); saveCfg();
-  if (cr && crReady){ try { cr.rotate(d); } catch(e){} }
+  if (cr && crReady){ try { cr.rotateTo(cropBaseRot + a); } catch(e){} }
   cropInvalid(); schedulePreview(true);
 }
 function crCropMax(){
@@ -1422,6 +1654,18 @@ function crCenter(){
   var b = cr.getCropBoxData(), c = cr.getContainerData();
   cr.setCropBoxData({ left:(c.width - b.width)/2, top:(c.height - b.height)/2,
                       width:b.width, height:b.height });
+  cropInvalid(); schedulePreview(false);
+}
+function crReset(){
+  if (!cr || !crReady) return;
+  /* 只还原照片裁剪：方向、缩放、位置和裁剪框回到本次加载完成时；其它创作设置不动。 */
+  curRot = 0; cfg.cropRot = 0; syncRotUI(); saveCfg();
+  try {
+    cr.reset();
+    cr.rotateTo(cropBaseRot);
+    cr.setAspectRatio(contentAR());
+    cr.clear(); cr.crop();
+  } catch(e){}
   cropInvalid(); schedulePreview(false);
 }
 function padSideVal(onId, inId, def){
@@ -1446,6 +1690,7 @@ $("padOn").addEventListener("change", applyPad);
 });
 $("cropMax").addEventListener("click", crCropMax);
 $("cropCenter").addEventListener("click", crCenter);
+$("cropReset").addEventListener("click", crReset);
 $("rotStep").addEventListener("click", function(){ setRot(mod(curRot + 90 + 180, 360) - 180); });
 $("rotL").addEventListener("click", function(){ setRot(mod(curRot - 90 + 180, 360) - 180); });
 $("rotRange").addEventListener("input", function(){
@@ -1455,6 +1700,8 @@ $("rotRange").addEventListener("change", function(){ setRot(+$("rotRange").value
 
 /* ---------- 选图（R1.0.17：EXIF 归一 + 换图重置裁剪旋转） ---------- */
 var imgUrl = null;
+/* false = 文件方向已在进入 Cropper 前处理完；true = 烤制失败，交给 Cropper 兜底读取 EXIF。 */
+var imgNeedsCropperOrientation = false;
 /* 读 JPEG EXIF orientation（1=已正，2~8=需摆正）；非 JPEG/解析失败返回 1。
    只扫段头，不做完整解码。 */
 function exifOrientation(buf){
@@ -1483,10 +1730,12 @@ function exifOrientation(buf){
   return 1;
 }
 /* 采纳图片：收编对象/URL、重置裁剪旋转（不跨图记忆）、走既有初始化链 */
-function adoptImg(im2, url, f){
+function adoptImg(im2, url, f, needsCropperOrientation){
   if (imgUrl && imgUrl !== url) URL.revokeObjectURL(imgUrl);
   imgUrl = url;
   img = im2;
+  cropDoneDismissed = false;
+  imgNeedsCropperOrientation = !!needsCropperOrientation;
   curRot = 0; cfg.cropRot = 0; syncRotUI();   /* R1.0.17: 换图重置裁剪旋转 */
   previewOK = false;   /* 新图未预览，先锁上传 */
   $("filerow").style.display = "flex";
@@ -1499,39 +1748,93 @@ function adoptImg(im2, url, f){
   setMode(MODE, true);
   if (MODE === 0) goEl.disabled = true;   /* 预览跑通前禁止上传 */
   schedulePreview(false);
+  scheduleCropDone();
 }
+var imageLoadSeq = 0, cancelImageLoad = null;
 function loadFile(f){
   if (!f) return;
   if (!/^image\//.test(f.type)){ msg("请选择图片文件", "err"); return; }
-  var url = URL.createObjectURL(f);
-  var im = new Image();
+
+  /* iOS Safari 偶尔会让旧 FileReader / toBlob 回调晚于新选择返回；新任务开始时
+     立即废弃旧任务，只有最后一次选择能够替换 Cropper。 */
+  if (cancelImageLoad) cancelImageLoad();
+  var seq = ++imageLoadSeq, done = false, sourceLoaded = false, urls = [];
+  var url = URL.createObjectURL(f); urls.push(url);
+  var im = new Image(), timer = 0;
+  function current(){ return seq === imageLoadSeq; }
+  function cleanup(keep){
+    for (var i = 0; i < urls.length; i++){
+      if (urls[i] !== keep){ try { URL.revokeObjectURL(urls[i]); } catch(e){} }
+    }
+    urls = [];
+  }
+  function cancel(){
+    if (done) return;
+    done = true; clearTimeout(timer); cleanup(null);
+    if (cancelImageLoad === cancel) cancelImageLoad = null;
+  }
+  function commit(image, finalUrl, needsCropperOrientation){
+    if (done) return;
+    if (!current()){ cancel(); return; }
+    done = true; clearTimeout(timer); cleanup(finalUrl);
+    if (cancelImageLoad === cancel) cancelImageLoad = null;
+    adoptImg(image, finalUrl, f, needsCropperOrientation);
+  }
+  function fail(text){
+    if (done) return;
+    var show = current();
+    done = true; clearTimeout(timer); cleanup(null);
+    if (cancelImageLoad === cancel) cancelImageLoad = null;
+    if (show) msg(text, "err");
+  }
+  cancelImageLoad = cancel;
+  timer = setTimeout(function(){
+    if (done) return;
+    /* 原图已经能解码时，超时仅跳过 EXIF 烤制并交给 Cropper 兼容处理；旧图不闪空。 */
+    if (!current()){ cancel(); return; }
+    if (sourceLoaded) commit(im, url, true);
+    else fail("照片读取超时，请重新选择");
+  }, 12000);
+  msg("正在读取照片…", "");
+
   im.onload = function(){
+    if (done || !current()){ if (!done) cancel(); return; }
+    sourceLoaded = true;
     /* EXIF 归一：仅 JPEG 且方向标记 2~8 时，经 canvas 重绘烤正（drawImage 在
        from-image 内核上已按 EXIF 摆正），不再依赖 Cropper 的 XHR EXIF 方案；
        其余图片零额外成本。 */
-    if (!/^image\/jpeg$/.test(f.type)){ adoptImg(im, url, f); return; }
+    if (!/^image\/jpeg$/.test(f.type)){ commit(im, url, false); return; }
     var fr = new FileReader();
     fr.onload = function(){
+      if (done || !current()){ if (!done) cancel(); return; }
       var o = 1;
       try { o = exifOrientation(fr.result); } catch(e){}
-      if (o < 2 || o > 8){ adoptImg(im, url, f); return; }
-      var cv = document.createElement("canvas");
-      cv.width = im.naturalWidth; cv.height = im.naturalHeight;
-      cv.getContext("2d").drawImage(im, 0, 0);
-      cv.toBlob(function(b){
-        if (!b || !/^image\//.test(b.type)){ adoptImg(im, url, f); return; }  /* 烤制失败兜底走原图 */
-        /* R1.0.22：revoke 挪到结果分支里——兜底路径还要用 url，提前吊销会让兜底图裂 */
-        var u2 = URL.createObjectURL(b);
-        var im2 = new Image();
-        im2.onload = function(){ URL.revokeObjectURL(url); adoptImg(im2, u2, f); };
-        im2.onerror = function(){ URL.revokeObjectURL(u2); adoptImg(im, url, f); };
-        im2.src = u2;
-      }, "image/jpeg", 0.95);
+      if (o < 2 || o > 8){ commit(im, url, false); return; }
+      try {
+        var cv = document.createElement("canvas");
+        cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+        cv.getContext("2d").drawImage(im, 0, 0);
+        cv.toBlob(function(b){
+          if (done || !current()){ if (!done) cancel(); return; }
+          if (!b || !/^image\//.test(b.type)){ commit(im, url, true); return; }
+          var u2 = URL.createObjectURL(b); urls.push(u2);
+          var im2 = new Image();
+          im2.onload = function(){
+            if (done || !current()){ if (!done) cancel(); return; }
+            commit(im2, u2, false);
+          };
+          im2.onerror = function(){
+            if (done || !current()){ if (!done) cancel(); return; }
+            commit(im, url, true);
+          };
+          im2.src = u2;
+        }, "image/jpeg", 0.95);
+      } catch(e){ commit(im, url, true); }
     };
-    fr.onerror = function(){ adoptImg(im, url, f); };
-    fr.readAsArrayBuffer(f);
+    fr.onerror = function(){ commit(im, url, true); };
+    try { fr.readAsArrayBuffer(f); } catch(e){ commit(im, url, true); }
   };
-  im.onerror = function(){ msg("图片解码失败，换一张试试", "err"); };
+  im.onerror = function(){ fail("图片解码失败，换一张试试"); };
   im.src = url;
 }
 /* 部分品牌安卓手机Android captive WebView 没实现 onShowFileChooser 时，input 仍会收到 click，但页面
@@ -1542,6 +1845,8 @@ function pickerDidLeave(){ if (pickerTimer) pickerLeftPage = true; }
 window.addEventListener("blur", pickerDidLeave);
 document.addEventListener("visibilitychange", function(){ if (document.hidden) pickerDidLeave(); });
 fileEl.addEventListener("click", function(){
+  /* 先清空才能保证 iOS 再选同名照片（图库常统一命名 image.jpg）仍触发 change。 */
+  fileEl.value = "";
   if (!captivePage || !/Android/i.test(navigator.userAgent)) return;
   if (pickerTimer || $("browserFallback").classList.contains("show")) return;
   pickerLeftPage = false;
@@ -1555,7 +1860,9 @@ fileEl.addEventListener("change", function(){
   pickerTimer = 0;
   pickerLeftPage = false;
   $("browserFallback").classList.remove("show");
-  loadFile(fileEl.files[0]);
+  var f = fileEl.files && fileEl.files[0];
+  fileEl.value = "";   /* File 对象已取得；再次选择同一张也必须触发 change。 */
+  loadFile(f);
 });
 ["dragenter","dragover"].forEach(function(ev){
   document.addEventListener(ev, function(e){ e.preventDefault(); });
@@ -1788,10 +2095,10 @@ function ensureObjHandles(el){
   var hDel = document.createElement("i"); hDel.className = "hnd h-del"; hDel.dataset.a = "del";
   el.appendChild(hS); el.appendChild(hR); el.appendChild(hW); el.appendChild(hDel);
 }
-function relayoutOne(i, keepSize){
+function relayoutOne(i, keepSize, fixedScale){
   var objs = curObjs(), o = objs[i], el = objLayerEl.children[i];
   if (!o || !el) return;
-  var s = objScale();
+  var s = fixedScale > 0 ? fixedScale : objScale();
   el.style.left = (o.x * s) + "px";
   el.style.top  = (o.y * s) + "px";
   el.style.transform = "translate(-50%,-50%) rotate(" + (+o.rot||0) + "deg)";
@@ -1831,8 +2138,10 @@ objLayerEl.addEventListener("pointerdown", function(e){
   }
   var r = el.getBoundingClientRect();
   var cx = r.left + r.width/2, cy = r.top + r.height/2;
+  var dragScale = objScale();
   od = { i:i, pid:e.pointerId, act:(e.target.dataset && e.target.dataset.a) || "m",
          sx:e.clientX, sy:e.clientY,
+         scale:dragScale,
          x0:o.x, y0:o.y, size0:o.size, rot0:o.rot,
          wrap0:(+o.wrap || Math.round(EW*0.94)),
          cs:Math.cos((+o.rot||0)*Math.PI/180), sn:Math.sin((+o.rot||0)*Math.PI/180),
@@ -1840,7 +2149,7 @@ objLayerEl.addEventListener("pointerdown", function(e){
          d0:Math.hypot(e.clientX-cx, e.clientY-cy),
          a0:Math.atan2(e.clientY-cy, e.clientX-cx)*180/Math.PI };
   objEditing = true;
-  relayoutOne(i);
+  relayoutOne(i, false, dragScale);
   startLive();             /* 构建无文字底图缓存并首帧实时重绘（画布唯一视觉源） */
   e.preventDefault();
   document.addEventListener("pointermove", odMove, { passive:false });
@@ -1850,7 +2159,7 @@ objLayerEl.addEventListener("pointerdown", function(e){
 function odMove(e){
   if (!od || e.pointerId !== od.pid) return;   /* R1.0.22：只响应发起手势的指针 */
   var o = curObjs()[od.i]; if (!o) return;
-  var s = objScale();
+  var s = od.scale;
   if (od.act === "m"){
     o.x = od.x0 + (e.clientX - od.sx)/s;
     o.y = od.y0 + (e.clientY - od.sy)/s;
@@ -1870,14 +2179,14 @@ function odMove(e){
     o.rot = rotSnap(clamp(Math.round(od.rot0 + (a - od.a0)), -180, 180));
     $("tRot").value = Math.round(o.rot);
   }
-  scheduleLive();          /* 实时重绘：每帧 = 底图贴回 + 全部文字矢量重画 */
+  scheduleLive();          /* 实时重绘：每帧 = 缓存层贴回 + 当前文字矢量重画 */
   e.preventDefault();
 }
 function odUp(e){
   if (e && od && e.pointerId !== od.pid) return;
   if (od){ saveCfg(); }
   od = null; objEditing = false; layoutObjs();
-  liveBase = null;
+  liveBase = null; liveMetric = null;
   if (liveRaf){ cancelAnimationFrame(liveRaf); liveRaf = 0; }
   schedulePreview(false);  /* 松手全量合成：snapIdx 就近吸附恢复锐利边缘 */
   document.removeEventListener("pointermove", odMove);
@@ -2108,11 +2417,75 @@ function postSettings(fields, done, stateId, note){
 }
 /* 编辑空间几何切换后的重排：画布尺寸 / 对象手柄 / 预览全部跟着换。 */
 function onGeomChanged(){
-  liveBase = null;
+  liveBase = null; liveMetric = null;
   try { prevEl.width = EW; prevEl.height = EH; } catch(e){}
   try { layoutObjs(); } catch(e){}
   schedulePreview(false);
 }
+
+/* ---------- 屏幕自检与抖动示例：共用一把发送锁，避免刷新期间重复发送 ---------- */
+var SCREEN_TEST_NAME = { white:"纯白", black:"纯黑", red:"纯红", yellow:"纯黄",
+                         grid:"边框网格", checker:"四色棋盘" };
+var directFrameBusy = false;
+function setDirectFrameDisabled(disabled){
+  var buttons = document.querySelectorAll(".epdTest, #ditherDemoBtn");
+  for (var i = 0; i < buttons.length; i++) buttons[i].disabled = !!disabled;
+}
+function finishDirectFrame(stateId, kind, text){
+  if (!directFrameBusy) return;
+  hideWorkLoading();
+  directFrameBusy = false;
+  saveState(stateId, kind, text);
+  /* 给显示任务留出取得帧锁的时间；刷新期间若误点，固件仍会返回 busy。 */
+  setTimeout(function(){ setDirectFrameDisabled(false); }, 1500);
+}
+function sendDirectFrame(stateId, label, buildFrame, successText){
+  if (directFrameBusy){ saveState(stateId, "warn", "⚠ 屏幕任务正在进行，请稍后再试"); return; }
+  if (LOCAL_PREVIEW){
+    saveState(stateId, "warn", "⚠ 未连接设备，无法刷新屏幕");
+    return;
+  }
+  directFrameBusy = true;
+  setDirectFrameDisabled(true);
+  saveState(stateId, "busy", "正在生成" + label + "…");
+  showWorkLoading("正在生成" + label + "…");
+  afterLoadingPaint(function(){
+    var body;
+    try { body = buildFrame(); }
+    catch(e){ finishDirectFrame(stateId, "err", "✗ 生成失败：" + e.message); return; }
+    updateWorkLoading("正在发送到墨水屏…");
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", api("/api/frame"));
+    xhr.timeout = 30000;
+    xhr.onload = function(){
+      if (xhr.status === 200){
+        finishDirectFrame(stateId, "ok", successText);
+      } else if (xhr.status === 500 && /busy/i.test(xhr.responseText || "")){
+        finishDirectFrame(stateId, "warn", "⚠ 屏幕仍在刷新，请等待完成后重试");
+      } else {
+        finishDirectFrame(stateId, "err", "✗ 发送失败：设备返回 " + xhr.status);
+      }
+    };
+    xhr.ontimeout = function(){ finishDirectFrame(stateId, "err", "✗ 发送超时，请确认设备连接"); };
+    xhr.onerror = function(){ finishDirectFrame(stateId, "err", "✗ 网络错误：请确认已连接 MoInk 热点"); };
+    xhr.send(body);
+  });
+}
+function runScreenTest(kind){
+  var name = SCREEN_TEST_NAME[kind];
+  if (!name){ saveState("screenTestMsg", "err", "✗ 未知测试项"); return; }
+  sendDirectFrame("screenTestMsg", "“" + name + "”测试帧", function(){
+    return buildScreenTestFrame(kind);
+  }, "✓ 已发送“" + name + "”；等待屏幕完全刷新后再选下一项");
+}
+function runDitherDemo(){
+  sendDirectFrame("ditherDemoMsg", "四色点阵", buildDitherDemoFrame,
+    "✓ 已发送，请等待屏幕完成刷新；近看像素、远看色调");
+}
+document.querySelectorAll(".epdTest").forEach(function(button){
+  button.addEventListener("click", function(){ runScreenTest(button.dataset.test); });
+});
+$("ditherDemoBtn").addEventListener("click", runDitherDemo);
 /* ---------- 维护 ---------- */
 /* ---------- 统一升级入口（R1.2.0，FB-015）----------
    固件与控制页走同一条 /api/upload，由固件按请求体首块内容嗅探分流，用户不需要
@@ -2245,7 +2618,7 @@ loadCfg();
 applyMode(cfg.mode || DEF.mode);
 setMode(cfg.lastMode ? 1 : 0, true);
 syncSel();
-window.addEventListener("resize", function(){ layoutObjs(); });
+window.addEventListener("resize", function(){ layoutObjs(); scheduleCropDone(); });
 $("tFont").value = cfg.textFont || 0;
 $("tSize").value = cfg.textSize || 100;
 $("tColor").value = cfg.textColor || 0;

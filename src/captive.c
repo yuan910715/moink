@@ -14,32 +14,27 @@ static const char *TAG = "captive";
 
 #define DNS_PORT 53
 #define DNS_BUF  512
-#define APPLE_SUCCESS_WINDOW_MS 60000
-
 static volatile bool s_apple_success_pending;
-static TickType_t s_apple_success_deadline;
 
 static void captive_arm_apple_success(void)
 {
-    s_apple_success_deadline = xTaskGetTickCount() + pdMS_TO_TICKS(APPLE_SUCCESS_WINDOW_MS);
     s_apple_success_pending = true;
 }
 
 static bool captive_apple_success_active(void)
 {
-    if (!s_apple_success_pending) return false;
-    TickType_t now = xTaskGetTickCount();
-    if ((int32_t)(s_apple_success_deadline - now) < 0) {
-        s_apple_success_pending = false;
-        return false;
-    }
-    return true;
+    return s_apple_success_pending;
+}
+
+void captive_apple_station_connected(void)
+{
+    /* 新关联一定是一次新的门户会话，不能继承上次连接的 Success。 */
+    s_apple_success_pending = false;
 }
 
 void captive_apple_station_disconnected(void)
 {
-    /* Success 只服务于当前这次连接。用户主动断开后立即恢复门户，下一次连接
-       无需等待超时或重启 ESP32；60 秒窗口只作为漏掉断开事件时的兜底。 */
+    /* Success 只服务于当前这次连接；断开后清除，下次连接重新显示引导页。 */
     s_apple_success_pending = false;
 }
 
@@ -60,6 +55,7 @@ static esp_err_t captive_apple_done_page(httpd_req_t *req)
     return httpd_resp_sendstr(req,
         "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\">"
+        "<meta name=\"format-detection\" content=\"telephone=no,email=no,address=no\">"
         "<title>地址已复制</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;"
         "display:flex;align-items:center;justify-content:center;padding:24px;background:#f5f5f7;"
         "color:#1d1d1f;font-family:-apple-system,BlinkMacSystemFont,\"PingFang SC\",sans-serif}"
@@ -67,11 +63,17 @@ static esp_err_t captive_apple_done_page(httpd_req_t *req)
         "box-shadow:0 10px 36px #00000014;text-align:center}.ok{width:60px;height:60px;margin:0 auto 18px;"
         "display:grid;place-items:center;border-radius:50%;background:#e8f7ed;color:#16833d;"
         "font-size:32px;font-weight:700}h1{font-size:23px;margin:0 0 12px}p{font-size:16px;"
-        "line-height:1.65;color:#555;margin:8px 0}.next{margin-top:18px;padding:14px;border-radius:12px;"
-        "background:#fff7df;color:#684f18;font-size:15px}</style></head><body><main class=\"card\">"
+        "line-height:1.65;color:#555;margin:8px 0}.open{display:block;margin:18px 0 10px;padding:14px;"
+        "border-radius:12px;background:#1677ff;color:#fff;text-decoration:none;font-size:17px;font-weight:700}"
+        ".compat{font-size:13px;color:#777}.next{margin-top:16px;padding:14px;border-radius:12px;"
+        "background:#fff7df;color:#684f18;font-size:14px}</style></head><body><main class=\"card\">"
         "<div class=\"ok\">&#10003;</div><h1>地址已复制</h1>"
-        "<p>请点击右上角的“完成”关闭此页面。</p>"
-        "<p class=\"next\">然后打开系统自带的 Safari，在地址栏粘贴并访问 <b>192.168.4.1</b></p>"
+        "<p>可以先尝试直接打开 Safari。</p>"
+        "<a class=\"open\" href=\"http://192.168.4.1/\" target=\"_blank\" rel=\"noopener\">"
+        "尝试在 Safari 中打开</a>"
+        "<p class=\"compat\">此功能由 iOS 系统控制，部分版本可能不会弹出打开提示。</p>"
+        "<p class=\"next\">如果没有弹出提示，或仍停留在当前页面，请点击右上角的完成按钮（✓），"
+        "然后打开 Safari，在地址栏粘贴并访问 <b>192.168.4.1</b>。</p>"
         "</main></body></html>");
 }
 
@@ -187,8 +189,8 @@ esp_err_t captive_redirect(httpd_req_t *req)
 
 esp_err_t captive_apple_landing(httpd_req_t *req)
 {
-    /* 用户复制地址后显示友好完成页；同时开启成功窗口，让 Apple 后台复探获得
-       严格的标准 Success。热点保持连接，供 Safari 访问。 */
+    /* 用户复制地址后显示友好完成页；本次 WiFi 连接余下时间内，让 Apple 后台
+       复探始终获得严格的标准 Success，避免长时间传图时门户再次弹出。 */
     char query[64], done[8];
     if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK &&
         httpd_query_key_value(query, "moink_done", done, sizeof(done)) == ESP_OK &&
@@ -205,6 +207,7 @@ esp_err_t captive_apple_landing(httpd_req_t *req)
     return httpd_resp_sendstr(req,
         "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\">"
+        "<meta name=\"format-detection\" content=\"telephone=no,email=no,address=no\">"
         "<title>使用 Safari 打开 MoInk</title><style>"
         "*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;"
         "justify-content:center;padding:24px;background:#f5f5f7;color:#1d1d1f;font-family:-apple-system,"
@@ -216,21 +219,39 @@ esp_err_t captive_apple_landing(httpd_req_t *req)
         "button{width:100%;border:0;border-radius:12px;padding:14px;background:#1677ff;color:#fff;"
         "font-size:17px;font-weight:700}.steps{margin-top:18px;padding:14px;text-align:left;border-radius:12px;"
         "background:#fff7df;color:#684f18;font-size:14px;line-height:1.65}.ok{color:#16833d;font-weight:700}"
+        ".manual{display:none;margin-top:12px;padding:12px;border-radius:12px;background:#fff1ef;text-align:left}"
+        ".manual.show{display:block}.manual p{margin:0 0 8px;color:#9b2c22;font-size:14px}"
+        ".manual input{width:100%;padding:11px;border:1px solid #e5b7b1;border-radius:9px;background:#fff;"
+        "color:#1d1d1f;font:600 16px ui-monospace,monospace}.manual button{margin-top:10px;background:#555}"
+        ".loadingState{display:flex;align-items:center;justify-content:center;gap:9px;color:#16833d;font-weight:700}"
+        ".spinner{width:18px;height:18px;border:2px solid #b9dfc6;border-top-color:#16833d;border-radius:50%;"
+        "animation:spin .75s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}"
         "</style></head><body><main class=\"card\"><div class=\"logo\">&#128241;</div>"
         "<h1>请使用 Safari 打开配置页</h1><p>墨印 · MoInk</p>"
         "<span class=\"addr\" id=\"addr\">192.168.4.1</span>"
-        "<button id=\"copy\" type=\"button\">复制地址并关闭此页</button>"
-        "<p id=\"state\"></p><div class=\"steps\"><b>接下来：</b><br>"
-        "1. 点击上方按钮复制地址<br>2. 打开系统自带的 Safari<br>3. 在地址栏粘贴并访问</div>"
-        "</main><script>function finish(){document.getElementById('state').className='ok';"
-        "document.getElementById('state').textContent='已复制，请打开 Safari 并粘贴访问';"
-        "setTimeout(function(){location.replace('/hotspot-detect.html?moink_done=1');},700)}"
-        "function fallback(){var t=document.createElement('textarea');t.value='192.168.4.1';"
+        "<button id=\"copy\" type=\"button\">复制地址并继续</button>"
+        "<p id=\"state\"></p><div class=\"manual\" id=\"manualBox\">"
+        "<p>自动复制失败，请长按下面的完整地址复制：</p>"
+        "<input id=\"manualAddr\" type=\"text\" value=\"http://192.168.4.1\" readonly>"
+        "<button id=\"manualNext\" type=\"button\">已手动复制，继续</button></div>"
+        "<div class=\"steps\"><b>操作：</b><br>"
+        "点击上方按钮复制完整地址，随后可在下一页尝试打开 Safari。</div>"
+        "</main><script>function finish(){var b=document.getElementById('copy'),"
+        "n=document.getElementById('manualNext'),s=document.getElementById('state');"
+        "b.disabled=true;n.disabled=true;b.textContent='地址已复制';n.textContent='正在继续…';"
+        "document.body.setAttribute('aria-busy','true');s.className='loadingState';"
+        "s.innerHTML='<span class=\"spinner\" aria-hidden=\"true\"></span><span>正在加载下一步，请稍候…</span>';"
+        "requestAnimationFrame(function(){requestAnimationFrame(function(){"
+        "location.replace('/hotspot-detect.html?moink_done=1')})})}"
+        "function fallback(){var t=document.createElement('textarea');t.value='http://192.168.4.1';"
         "t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.focus();t.select();"
         "t.setSelectionRange(0,t.value.length);var ok=false;try{ok=document.execCommand('copy')}catch(e){}"
-        "document.body.removeChild(t);if(ok)finish();else{var a=document.getElementById('addr');"
-        "document.getElementById('state').textContent='复制失败，请长按上方地址复制';window.getSelection().selectAllChildren(a)}}"
+        "document.body.removeChild(t);if(ok)finish();else{var m=document.getElementById('manualAddr');"
+        "document.getElementById('state').textContent='';document.getElementById('state').className='';"
+        "document.getElementById('manualBox').className='manual show';"
+        "m.focus();m.select();m.setSelectionRange(0,m.value.length)}}"
+        "document.getElementById('manualNext').onclick=finish;"
         "document.getElementById('copy').onclick=function(){if(navigator.clipboard&&window.isSecureContext)"
-        "navigator.clipboard.writeText('192.168.4.1').then(finish,fallback);else fallback()};</script>"
+        "navigator.clipboard.writeText('http://192.168.4.1').then(finish,fallback);else fallback()};</script>"
         "</body></html>");
 }

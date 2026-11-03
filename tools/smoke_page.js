@@ -50,6 +50,16 @@ ok("startup block intact (loadSettings call present)", /loadSettings\(\)/.test(j
 ok("page version meta present (R1.x.y)", /moink-page-version" content="R1\.\d+\.\d+"/.test(page));
 // 10. R1.0.18 UI 重构：齿轮入口 / 返回按钮 / 无页签 / 步骤条 / 设备信息网格 / 分栏 / 文案
 ok("R1.0.18 gear + back nav present", page.includes('id="gearBtn"') && page.includes('id="backBtn"'));
+ok("mobile viewport zoom disabled without disabling Cropper touch zoom",
+   page.includes('maximum-scale=1, user-scalable=no')
+   && page.includes('touch-action:pan-x pan-y')
+   && js.indexOf('document.addEventListener("gesturestart", stopViewportGesture, { passive:false })') >= 0
+   && js.indexOf('zoomOnTouch: true') >= 0);
+ok("mobile crop completion shortcut scrolls past Cropper",
+   page.includes('id="cropDone"') && page.includes("裁剪完成&nbsp;↓")
+   && page.includes("#cropDone.show{ display:inline-flex; }")
+   && js.indexOf('$("styleCard").scrollIntoView({ behavior:"smooth", block:"start" })') >= 0
+   && js.indexOf('window.addEventListener("scroll", scheduleCropDone, { passive:true })') >= 0);
 ok("R1.0.18 tab bar removed", page.indexOf('data-t="image"') < 0 && page.indexOf('id="tabs"') < 0);
 ok("R1.0.18 subtitle", page.includes("把喜欢的瞬间，放在身边"));
 ok("R1.0.18 header version line removed", page.indexOf('id="i-fw"') < 0);
@@ -83,14 +93,39 @@ ok("R1.0.22 pointerId guard", js.indexOf("pid:e.pointerId") >= 0 && js.indexOf("
 ok("R1.0.22 offline export cleans runtime nodes",
    js.indexOf("cloneNode(true)") >= 0 && js.indexOf("#ctrls > *, #objLayer > *") >= 0);
 ok("R1.0.22 EXIF revoke timing fixed",
-   js.indexOf("im2.onload = function(){ URL.revokeObjectURL(url); adoptImg(im2, u2, f); };") >= 0);
+   js.indexOf("function cleanup(keep)") >= 0
+   && js.indexOf("if (urls[i] !== keep){ try { URL.revokeObjectURL(urls[i]); }") >= 0);
+ok("R1.2.3 iOS repeated photo selection and async race guarded",
+   js.indexOf('fileEl.value = "";') >= 0
+   && js.indexOf("var f = fileEl.files && fileEl.files[0]") >= 0
+   && js.indexOf("var imageLoadSeq = 0, cancelImageLoad = null") >= 0
+   && js.indexOf("if (cancelImageLoad) cancelImageLoad()") >= 0
+   && js.indexOf("function current(){ return seq === imageLoadSeq; }") >= 0
+   && js.indexOf("if (sourceLoaded) commit(im, url, true)") >= 0
+   && js.indexOf("}, 12000);") >= 0
+   && js.indexOf('msg("正在读取照片…", "")') >= 0);
 // 9. R1.0.17 EXIF 归一 + 换图重置旋转 + 文字开关过滤
 ok("R1.0.17 exifOrientation present", /function exifOrientation\(/.test(page));
 ok("R1.0.17 cropRot reset on adoptImg", /curRot = 0; cfg\.cropRot = 0; syncRotUI\(\);/.test(page));
+ok("R1.2.2 single-source image orientation + absolute user rotation",
+   js.indexOf("imgNeedsCropperOrientation = !!needsCropperOrientation") >= 0
+   && js.indexOf("checkOrientation: needsExif") >= 0
+   && js.indexOf("scalable: needsExif") >= 0
+   && js.indexOf("cropBaseRot = Number(d && d.rotate) || 0") >= 0
+   && js.indexOf("cr.rotateTo(cropBaseRot + a)") >= 0
+   && js.indexOf("cr.rotate(d)") < 0
+   && page.indexOf("#rotRange{ touch-action:pan-y; }") >= 0);
 ok("R1.0.17 textOn filter in renderComposite", /cfg\.textOn \? cfg\.objsImg : \[\]/.test(page));
 ok("text object system (drawObjs + normObjs)", js.indexOf("function drawObjs") >= 0 && js.indexOf("function normObjs") >= 0);
 ok("padding module (contentRect/contentAR)", js.indexOf("function contentRect") >= 0 && js.indexOf("function contentAR") >= 0);
 ok("cropper bridge (initCrop/getCropCanvas)", js.indexOf("function initCrop") >= 0 && js.indexOf("function getCropCanvas") >= 0);
+ok("R1.2.2 crop reset returns current photo to its loaded state",
+   page.includes('id="cropReset"')
+   && js.indexOf("function crReset()") >= 0
+   && js.indexOf("cr.reset()") >= 0
+   && js.indexOf("cr.rotateTo(cropBaseRot)") >= 0
+   && js.indexOf("curRot = 0; cfg.cropRot = 0; syncRotUI(); saveCfg();") >= 0
+   && js.indexOf('$("cropReset").addEventListener("click", crReset)') >= 0);
 ok("rot snap 90 (rotSnap)", js.indexOf("function rotSnap") >= 0);
 ok("old crop code retired", js.indexOf("drawCropInto") < 0 && js.indexOf("imgSig") < 0 && js.indexOf("textMetrics") < 0);
 ok("frozen algorithm intact (WARM_SAT_K + power law)", js.indexOf("WARM_SAT_K = 0.75") >= 0 && js.indexOf("Math.pow(s, 1 - WARM_SAT_K*g)") >= 0);
@@ -128,6 +163,67 @@ eq("packIdx all-white == 0x55", buf.every(b => b === 0x55), true);
 // 4/5. R1.0.22：modeAR / statsOf 死代码已删除
 ok("R1.0.22 dead code removed (modeAR/statsOf)",
    js.indexOf("function modeAR") < 0 && js.indexOf("function statsOf") < 0);
+
+// R1.2.2：内置屏幕自检直接生成设备方向索引帧，不走裁剪/旋转/照片算法。
+ok("R1.2.2 screen-test controls present",
+   page.includes('id="screenTest"') && page.includes('id="screenTestButtons"')
+   && page.includes('data-test="white"') && page.includes('data-test="black"')
+   && page.includes('data-test="red"') && page.includes('data-test="yellow"')
+   && page.includes('data-test="grid"') && page.includes('data-test="checker"'));
+ok("R1.2.2 four-color E-Paper introduction present and collapsed by default",
+   page.includes('<details class="card" id="epdIntro">')
+   && page.includes("了解四色墨水屏")
+   && page.includes("画面抖动")
+   && page.includes("双稳态")
+   && page.indexOf('<details class="card" id="epdIntro" open>') < 0);
+ok("R1.2.2 dither demonstration copy and control present",
+   page.includes('id="ditherDemoBtn"') && page.includes('id="ditherDemoMsg"')
+   && page.includes("亲眼看看四色如何模拟更多颜色")
+   && page.includes("利用人眼的空间混色效应")
+   && page.includes("点击后会覆盖屏幕当前画面"));
+ok("R1.2.2 screen-test uses direct frame path",
+   js.indexOf("function buildScreenTestIdx") >= 0
+   && js.indexOf("function buildScreenTestFrame") >= 0
+   && js.indexOf("frameWithHeader(packIdx(buildScreenTestIdx(kind)))") >= 0
+   && js.indexOf('xhr.open("POST", api("/api/frame"))') >= 0);
+const testRed = sandbox.buildScreenTestIdx("red");
+eq("screen-test red dimensions", testRed.length, 768 * 552);
+eq("screen-test red is palette index 3", testRed.every(v => v === 3), true);
+const testChecker = sandbox.buildScreenTestIdx("checker");
+eq("screen-test checker first four 8px blocks",
+   [testChecker[0], testChecker[8], testChecker[16], testChecker[24]].join(","), "0,1,2,3");
+const testGrid = sandbox.buildScreenTestIdx("grid");
+eq("screen-test grid corner markers K/R/Y/K",
+   [testGrid[20*768+20], testGrid[20*768+700],
+    testGrid[500*768+20], testGrid[500*768+700]].join(","), "0,3,2,0");
+const testWhiteFrame = sandbox.buildScreenTestFrame("white");
+eq("screen-test full frame length", testWhiteFrame.length, 105984 + 16);
+eq("screen-test white payload == 0x55",
+   testWhiteFrame.slice(16).every(v => v === 0x55), true);
+ok("R1.2.2 dither demo uses exact direct-frame path",
+   js.indexOf("function buildDitherDemoBaseIdx") >= 0
+   && js.indexOf("function buildDitherDemoIdx") >= 0
+   && js.indexOf("frameWithHeader(packIdx(buildDitherDemoIdx()))") >= 0
+   && js.indexOf('sendDirectFrame("ditherDemoMsg"') >= 0);
+const ditherBase = sandbox.buildDitherDemoBaseIdx();
+eq("dither demo dimensions", ditherBase.length, 768 * 552);
+ok("dither demo base has only four palette indices",
+   ditherBase.every(v => v === 0 || v === 1 || v === 2 || v === 3));
+eq("dither demo native swatches K/W/R/Y",
+   [ditherBase[80*768+30], ditherBase[80*768+220],
+    ditherBase[80*768+400], ditherBase[80*768+600]].join(","), "0,1,3,2");
+eq("dither demo grayscale endpoints W/K",
+   [ditherBase[150*768+160], ditherBase[150*768+740]].join(","), "1,0");
+eq("dither demo orange endpoints Y/R",
+   [ditherBase[450*768+160], ditherBase[450*768+740]].join(","), "2,3");
+ok("dither demo final layout uses large direction labels and removes redundant copy",
+   js.indexOf('demoText("四色抖动色阶", 384, 8, 34, "#000", "center"') >= 0
+   && js.indexOf('demoText(routes[l], 16, ly + 36, 34') >= 0
+   && js.indexOf("近看四色点阵 · 远看连续色调") < 0
+   && js.indexOf('var names = ["灰阶"') < 0
+   && js.indexOf('384, 538, 20') >= 0
+   && js.indexOf("ditherDemoZoom") < 0
+   && js.indexOf("放大观察点阵") < 0);
 
 // 6. R1.0.16 竖屏编辑 + rotateCW 桥接
 eq("PANEL device frame 768x552", sandbox.PANEL.w + "x" + sandbox.PANEL.h, "768x552");
@@ -224,7 +320,7 @@ ok("personal branch hotspot is display-only",
    && page.indexOf('id="apSsid"') < 0 && page.indexOf('id="apPass"') < 0
    && page.indexOf('id="apClearPw"') < 0 && page.indexOf('id="saveAp"') < 0
    && js.indexOf('$("apPassView").textContent = s.pass_set ? "已设置" : "开放热点"') >= 0);
-ok("R1.2.1 版本 meta", page.indexOf('content="R1.2.1"') >= 0);
+ok("R1.2.3 版本 meta", page.indexOf('content="R1.2.3"') >= 0);
 ok("R1.2.1 正式配置页不含 iOS captive 专用渲染逻辑",
    js.indexOf("captiveLitePreview") < 0 && js.indexOf("iosDevice") < 0
    && page.indexOf("iosCaptiveNotice") < 0
@@ -241,27 +337,61 @@ ok("R1.2.1 Apple captive 使用轻量 Safari 引导页并返回 Success",
    captive.indexOf("请使用 Safari 打开配置页") >= 0
    && captive.indexOf("<p>墨印 · MoInk</p>") >= 0
    && captive.indexOf("连接窗口性能较低") < 0
-   && captive.indexOf("复制地址并关闭此页") >= 0
-   && captive.indexOf("192.168.4.1") >= 0
+   && captive.indexOf("复制地址并继续") >= 0
+   && captive.indexOf('id=\\"addr\\">192.168.4.1') >= 0
+   && captive.indexOf('id=\\"addr\\">http://192.168.4.1') < 0
+   && captive.indexOf('name=\\"format-detection\\"') >= 0
+   && captive.indexOf("clipboard.writeText('http://192.168.4.1')") >= 0
+   && captive.indexOf("t.value='http://192.168.4.1'") >= 0
    && captive.indexOf("moink_done=1") >= 0
-   && captive.indexOf("请点击右上角的“完成”关闭此页面") >= 0
+   && captive.indexOf("随后可在下一页尝试打开 Safari") >= 0
+   && captive.indexOf("setTimeout(function(){location.replace('/hotspot-detect.html?moink_done=1');},700)") < 0
+   && captive.indexOf("b.disabled=true;n.disabled=true;b.textContent='地址已复制'") >= 0
+   && captive.indexOf("s.className='loadingState'") >= 0
+   && captive.indexOf('class=\\"spinner\\" aria-hidden=\\"true\\"') >= 0
+   && captive.indexOf("正在加载下一步，请稍候…") >= 0
+   && captive.indexOf("requestAnimationFrame(function(){requestAnimationFrame(function(){") >= 0
+   && captive.indexOf("location.replace('/hotspot-detect.html?moink_done=1')") >= 0
+   && captive.indexOf('href=\\"http://192.168.4.1/\\" target=\\"_blank\\"') >= 0
+   && captive.indexOf("尝试在 Safari 中打开") >= 0
+   && captive.indexOf("部分版本可能不会弹出打开提示") >= 0
+   && captive.indexOf("如果没有弹出提示，或仍停留在当前页面") >= 0
+   && captive.indexOf("右上角的完成按钮（✓）") >= 0
+   && captive.indexOf('id=\\"manualAddr\\" type=\\"text\\" value=\\"http://192.168.4.1\\" readonly') >= 0
+   && captive.indexOf("自动复制失败，请长按下面的完整地址复制") >= 0
+   && captive.indexOf("已手动复制，继续") >= 0
+   && captive.indexOf("document.getElementById('manualNext').onclick=finish") >= 0
+   && captive.indexOf("window.getSelection().selectAllChildren(a)") < 0
    && captive.indexOf("<TITLE>Success</TITLE>") >= 0
-   && captive.indexOf("#define APPLE_SUCCESS_WINDOW_MS 60000") >= 0
+   && captive.indexOf("APPLE_SUCCESS_WINDOW_MS") < 0
+   && captive.indexOf("return s_apple_success_pending;") >= 0
+   && netifAp.indexOf("captive_apple_station_connected();") >= 0
    && netifAp.indexOf("captive_apple_station_disconnected();") >= 0
    && captive.indexOf("captive_deauth_task") < 0);
 ok("R1.2.1 小米文件选择兜底缩短为 0.8 秒",
    js.indexOf('if (!pickerLeftPage) $("browserFallback").classList.add("show");') >= 0
    && js.indexOf("}, 800);") >= 0 && js.indexOf("}, 1200);") < 0);
+ok("R1.2.2 Android captive 兜底显示完整 HTTP 地址并跳系统浏览器",
+   page.indexOf("打开 http://192.168.4.1 继续") >= 0
+   && page.indexOf("在系统浏览器中打开 http://192.168.4.1") >= 0
+   && page.indexOf("intent://192.168.4.1/#Intent;scheme=http;") >= 0
+   && page.indexOf("S.browser_fallback_url=http%3A%2F%2F192.168.4.1%2F") >= 0);
 ok("R1.2.1 文字框仅当前会话有效，重新打开页面为空",
    js.indexOf("delete stored.objsImg; delete stored.objsNote; delete stored.text;") >= 0
    && js.indexOf("cfg.objsImg = [];") >= 0
    && js.indexOf("cfg.objsNote = [];") >= 0
    && js.indexOf('if (!o){ txtEl.value = ""; return; }') >= 0);
-ok("R1.2.1 文字拖动全尺寸并复用 DOM 手柄",
-   js.indexOf("liveBase = renderBase(EW, EH)") >= 0
+ok("R1.2.2 文字拖动缓存静态画布、选中文字度量与页面缩放",
+   js.indexOf("liveBase = renderLiveBase(EW, EH, od ? od.i : -1)") >= 0
    && js.indexOf("function ensureObjHandles(el)") >= 0
    && js.indexOf('if (el.querySelector(".hnd")) return') >= 0
-   && js.indexOf('if (od) relayoutOne(od.i, od.act === "m" || od.act === "r")') >= 0
+   && js.indexOf("function renderLiveBase(cw, ch, skipIndex)") >= 0
+   && js.indexOf("if (i !== skipIndex) drawObj(ctx, objs[i], cw)") >= 0
+   && js.indexOf("ctx.drawImage(liveBase, 0, 0)") >= 0
+   && js.indexOf("ctx.putImageData(liveBase, 0, 0)") < 0
+   && js.indexOf("liveMetric = o ? objMetrics(o, 1) : null") >= 0
+   && js.indexOf("scale:dragScale") >= 0
+   && js.indexOf("var s = od.scale") >= 0
    && js.indexOf('el.textContent = "";\n  var hS') < 0);
 // DEV_API 三态行为：0 = 未连设备（离线乐观） / 1 = 旧固件（收紧） / 2 = 新固件
 // R1.1.2（FB-013）：mode 1 = 768x552 顺序（默认正解，任何 api 下都是 768x552）；

@@ -17,6 +17,9 @@ esp_err_t captive_redirect(httpd_req_t *req);
 /* Apple 探测地址返回轻量 Safari 引导页；完成页友好提示，后台复探返回标准 Success。 */
 esp_err_t captive_apple_landing(httpd_req_t *req);
 
+/* 新连接先清除旧会话状态；点击复制后 Success 保持到本次 WiFi 连接断开。 */
+void captive_apple_station_connected(void);
+
 /* WiFi 客户端断开时清除本次 Apple Success 状态。 */
 void captive_apple_station_disconnected(void);
 

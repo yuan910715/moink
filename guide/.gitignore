@@ -1,0 +1,4 @@
+.npm-cache/
+.qa/
+*.tgz
+*.zip

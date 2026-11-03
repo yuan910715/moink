@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f2eb">
+  <meta name="description" content="你好，欢迎使用墨印 MoInk。连接设备 Wi-Fi，用手机把喜欢的照片和文字留在四色墨水屏上，无需安装 App。">
+  <meta name="format-detection" content="telephone=no">
+  <title>MoInk · 墨印使用指南</title>
+  <style>
+    .save-card{padding:24px 0;text-align:center}
+    .save-card a{display:inline-flex;align-items:center;justify-content:center;min-height:48px;max-width:100%;padding:11px 24px;border:1px solid var(--ink);border-radius:var(--radius);background:var(--white);color:var(--ink);font-size:16px;font-weight:600}
+    .save-card a:hover{background:#e8e7dd}
+    .save-card a:active{background:#deddd3}
+    .save-card-hint{margin:8px 0 0;font-size:14px;line-height:24px;color:var(--muted)}
+    :root{--paper:#f5f2eb;--ink:#242620;--muted:#686a60;--line:#d9d7cc;--red:#b43e30;--yellow:#ead177;--green:#53604d;--white:#fffdf8;--radius:5px;--font-sans:"Punctuation SC","Inter",ui-sans-serif,system-ui,"PingFang SC","Noto Sans CJK SC","Noto Sans SC","Heiti SC","Microsoft YaHei","DengXian",sans-serif}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth;scroll-padding-top:90px}
+    body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-sans);font-size:16px;line-height:28px;-webkit-font-smoothing:antialiased}
+    a{color:inherit;text-decoration:none}
+    button,input{font:inherit}
+    button,a{-webkit-tap-highlight-color:transparent}
+    button{cursor:pointer}
+    a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--red);outline-offset:5px}
+    ::selection{background:var(--yellow)}
+    .wrap{width:min(1080px,calc(100% - 64px));margin:auto}
+    .mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+    .eyebrow{font-size:13px;letter-spacing:.18em;font-weight:700;text-transform:uppercase;color:var(--muted)}
+    .red{color:var(--red)}
+    .muted{color:var(--muted)}
+    header{border-bottom:1px solid var(--line)}
+    .header-inner{height:82px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand-mark{width:27px;height:30px;display:grid;grid-template-columns:repeat(2,1fr);gap:3px;transform:rotate(-7deg)}
+    .brand-mark i{background:var(--ink)}
+    .brand-mark i:nth-child(2){background:var(--red)}
+    .brand-mark i:nth-child(3){background:var(--yellow)}
+    .brand-mark i:nth-child(4){background:var(--white);border:1px solid var(--ink)}
+    .brand-name{display:inline-flex;align-items:flex-end;margin:0;line-height:1;font-size:24px;font-weight:750;letter-spacing:-1px}
+    .brand-name span{font-size:18px;font-weight:400;line-height:1;letter-spacing:2px;margin-left:10px;transform:translateY(-1px)}
+    .header-note{font-size:13px;letter-spacing:.12em;color:var(--muted)}
+    nav{display:flex;gap:25px;font-size:14px}
+    nav a:hover{color:var(--red)}
+    .hero{padding:32px 0}
+    .hero-copy{max-width:none;font-size:16px;color:var(--muted);margin:0;line-height:28px}
+    .intro-strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);padding:21px 0;gap:25px}
+    .intro-strip p{margin:0;font-size:16px;color:var(--muted);line-height:28px}
+    .intro-strip strong{display:block;font-size:18px;color:var(--ink);font-weight:600;margin-bottom:3px}
+    .screen-care{display:flex;align-items:flex-start;gap:12px;margin-top:24px;padding:18px 20px;border:1px solid #d8c59b;border-radius:var(--radius);background:#faf3e3}
+    .screen-care svg{flex-shrink:0;width:22px;height:22px;margin-top:3px;fill:none;stroke:var(--red);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .screen-care h2{margin:0 0 4px;font-size:18px;line-height:28px;font-weight:600}
+    .screen-care p{margin:0;font-size:16px;line-height:28px;color:var(--muted)}
+    .screen-care+section{padding-top:36px}
+    .strip-first{display:flex;align-items:center;gap:15px}
+    .color-dots{display:grid;grid-template-columns:repeat(2,12px);gap:4px;transform:rotate(-8deg)}
+    .color-dots i{width:12px;height:12px;background:var(--ink);border-radius:50%}
+    .color-dots i:nth-child(2){background:var(--white);border:1px solid #babbb1}
+    .color-dots i:nth-child(3){background:var(--red)}
+    .color-dots i:nth-child(4){background:var(--yellow)}
+    section{padding:70px 0;border-bottom:1px solid var(--line)}
+    .section-heading{display:flex;align-items:flex-start;gap:20px;margin-bottom:31px}
+    .section-no{font-size:14px;padding-top:9px;color:var(--red);letter-spacing:1px}
+    .section-heading h2{margin:0;font-size:24px;line-height:1.4;font-weight:600;letter-spacing:-.7px;line-height:32px}
+    .section-heading p{margin:7px 0 0;font-size:16px;color:var(--muted)}
+    .steps{counter-reset:step;display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:var(--radius);background:#faf8f2}
+    .step{position:relative;padding:25px 22px 23px}
+    .step+.step{border-left:1px solid var(--line)}
+    .step-number{font-size:13px;color:var(--red);letter-spacing:.15em}
+    .step h3{font-size:20px;font-weight:600;margin:13px 0 10px;line-height:28px}
+    .step p{font-size:16px;color:var(--muted);margin:0;line-height:28px}
+    .step-icon{display:block;width:32px;height:32px;margin-top:22px;stroke:var(--ink);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+    .wifi-tag{display:block;padding:8px 10px;background:#eaece2;color:#384032;margin-top:13px;border:1px dashed #bdc0b3;font-size:16px;text-align:center}
+    .wifi-tag small{display:block;font-family:inherit;font-size:14px;color:var(--muted)}
+    .step-note{margin-top:12px!important;font-size:14px}
+    .device-address{margin-top:22px;display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid var(--line);padding:0 0 21px}
+    .address-label{font-size:14px;color:var(--muted);margin:0 0 4px}
+    .address-value{font-size:25px;letter-spacing:-.5px;user-select:all}
+    .copy-button{background:transparent;border:1px solid #acae9f;border-radius:var(--radius);padding:10px 16px;min-height:44px;font-size:16px;color:var(--ink)}
+    .copy-button:hover{background:#e8e7dd}
+    .manual-copy{width:100%;padding:11px;border:1px solid var(--line);background:var(--white);font-size:16px;margin-top:10px}
+    [hidden]{display:none!important}
+    .create-layout{display:grid;grid-template-columns:1fr 1.05fr;gap:70px;align-items:center}
+    .recipe{margin:0;padding:0;list-style:none}
+    .recipe li{margin:0 0 21px}
+    .recipe li:last-child{margin-bottom:0}
+    .recipe .n{font-size:14px;color:var(--red);padding-top:3px}
+    .recipe h3{font-size:20px;margin:0 0 4px;font-weight:600;line-height:28px}
+    .recipe p{font-size:16px;color:var(--muted);margin:0;line-height:28px}
+    .note-demo{background:#e9e8df;border-radius:var(--radius);padding:30px 30px 21px;position:relative}
+    .note-card{position:relative;padding:29px 23px;background:var(--white);border:1px solid #d0d0c4;transform:rotate(-3deg);box-shadow:4px 6px 0 #00000007;min-height:210px}
+    .note-card:before{content:"";position:absolute;width:68px;height:23px;background:#dccb98a8;top:-12px;left:calc(50% - 34px);transform:rotate(4deg)}
+    .note-card .date{font-size:13px;letter-spacing:2px;color:var(--muted)}
+    .note-card h3{font-family:var(--font-sans);line-height:1.7;font-size:26px;font-weight:600;margin:15px 0 16px}
+    .note-card .note-line{font-size:16px;color:var(--red);letter-spacing:2px}
+    .note-caption{margin:22px 0 0;text-align:center;font-size:14px;color:var(--muted)}
+    .science-top{display:grid;grid-template-columns:1fr 1.05fr;gap:70px}
+    .science-top h3{font-family:var(--font-sans);font-size:24px;font-weight:600;line-height:1.6;margin:0 0 16px;line-height:32px}
+    .science-top p{margin:0;font-size:16px;color:var(--muted);line-height:28px}
+    .palette-box{border:1px solid var(--line);padding:24px;border-radius:var(--radius);background:#faf8f2}
+    .swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .swatch b{display:block;height:58px;background:#242620;border:1px solid #242620;border-radius:2px}
+    .swatch:nth-child(2) b{background:#fffdf8;border-color:#d5d4c8}
+    .swatch:nth-child(3) b{background:#e9c849;border-color:#ddbc3a}
+    .swatch:nth-child(4) b{background:#b43e30;border-color:#a92f23}
+    .swatch span{font-size:14px;color:var(--muted);display:block;margin-top:6px;text-align:center}
+    .dither-row{display:flex;align-items:center;gap:15px;margin-top:23px;padding-top:20px;border-top:1px solid var(--line)}
+    .dither{flex-shrink:0;width:68px;height:44px;background-color:#fffdf8;background-image:radial-gradient(#b43e30 1.4px,transparent 1.5px);background-size:5px 5px;border:1px solid var(--line)}
+    .dither-row p{font-size:16px;line-height:1.7;margin:0;color:var(--muted);line-height:28px}
+    .principles{margin-top:35px}
+    .principles article{border-top:1px solid var(--line);padding-top:18px}
+    .principles h3{margin:0 0 8px;font-size:20px;font-weight:600;line-height:28px}
+    .principles p{margin:0;color:var(--muted);font-size:16px;line-height:28px}
+    footer{padding:23px 0 28px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:14px;letter-spacing:.08em;color:var(--muted)}
+    .toast{position:fixed;z-index:10;bottom:30px;left:50%;transform:translateX(-50%);border-radius:var(--radius);padding:11px 18px;max-width:calc(100% - 30px);background:var(--ink);color:var(--white);font-size:14px;box-shadow:0 5px 24px #0002;text-align:center}
+    @media(min-width:1500px){.hero{padding:32px 0}
+    }
+    @media(max-width:850px){.wrap{width:calc(100% - 42px)}
+    .hero{padding:32px 0}
+    .hero-copy{max-width:none;font-size:16px;color:var(--muted);margin:0;line-height:28px}
+    .header-note{display:none}
+    .steps{grid-template-columns:repeat(2,1fr)}
+    .step:nth-child(3){border-left:0;border-top:1px solid var(--line)}
+    .step:nth-child(4){border-top:1px solid var(--line)}
+    .create-layout,.science-top{gap:35px}
+    }
+    @media(max-width:600px){html{scroll-padding-top:22px}
+    .wrap{width:calc(100% - 40px)}
+    .header-inner{height:68px}
+    .brand-name{font-size:23px}
+    .brand-name span{font-size:18px;margin-left:7px}
+    nav{gap:17px;font-size:14px}
+    nav .nav-science{display:none}
+    .hero{padding:32px 0}
+    .hero-copy{max-width:none;font-size:16px;color:var(--muted);margin:0;line-height:28px}
+    .intro-strip{grid-template-columns:1fr 1fr;gap:18px;padding:20px 0}
+    .strip-first{grid-column:1/-1;border-bottom:1px solid var(--line);padding-bottom:15px}
+    .intro-strip strong{font-size:18px}
+    .intro-strip p{font-size:16px;line-height:28px}
+    section{padding:41px 0}
+    .section-heading{gap:12px;margin-bottom:24px}
+    .section-heading h2{font-size:24px;line-height:32px}
+    .section-heading p{font-size:16px}
+    .step{padding:18px 16px}
+    .step h3{font-size:20px;margin-top:11px;line-height:28px}
+    .step p{font-size:16px;line-height:28px}
+    .step-icon{margin-top:17px;width:27px;height:27px}
+    .wifi-tag{font-size:16px;padding:8px 2px}
+    .step-note{font-size:14px}
+    .device-address{gap:10px;align-items:flex-start;flex-direction:column;padding-bottom:17px}
+    .address-value{font-size:25px}
+    .create-layout,.science-top{grid-template-columns:1fr;gap:29px}
+    .note-demo{padding:28px 28px 18px}
+    .note-card{min-height:200px}
+    .recipe li{margin-bottom:18px}
+    .science-top h3{font-size:24px;line-height:32px}
+    .principles{grid-template-columns:1fr;gap:20px;margin-top:25px}
+    .principles article{padding-top:15px}
+    .principles p{font-size:16px;line-height:28px}
+    footer{padding:19px 0 calc(24px + env(safe-area-inset-bottom));font-size:14px}
+    .toast{bottom:calc(22px + env(safe-area-inset-bottom));font-size:14px}
+    }
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}
+    *{animation:none!important;transition:none!important}
+    }
+    @media print{.save-card,.toast,nav{display:none!important}
+    .wrap{width:100%}
+    .hero{padding:32px 0}
+    section{padding:25px 0;break-inside:avoid}
+    footer{padding-bottom:0}
+    details p{display:block!important}
+    .note-card{box-shadow:none}
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    }
+    @media(max-width:600px){.steps,.intro-strip{grid-template-columns:1fr}
+    .intro-strip{gap:16px}
+    .strip-first{grid-column:auto}
+    .step+.step{border-left:0;border-top:1px solid var(--line)}
+    .step{padding:22px 20px}
+    .step-note{font-size:14px!important;line-height:24px}
+    .header-note{display:none}
+    }
+    
+  </style>
+</head>
+<body>
+  <header><div class="wrap header-inner">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><h1 class="brand-name">MoInk<span>墨印</span></h1></div>
+    <span class="header-note">A LITTLE GUIDE FOR YOUR LITTLE SCREEN</span>
+    <nav aria-label="页面导航"><a class="nav-science" href="#how">它的原理</a></nav>
+  </div></header>
+  <main id="top" class="wrap">
+    <div class="hero">
+      <div>
+        <p class="hero-copy">这是墨印 MoInk，一块能留住画面的墨水屏。<br>放一张喜欢的照片，写一句想说的话，<br>让值得记住的瞬间，安静地陪在身边。</p>
+      </div>
+    </div>
+    <div class="intro-strip">
+      <p><strong>内置强磁。</strong>背部含磁铁，可当做冰箱贴使用。</p>
+      <p><strong>像纸一样。</strong>借助环境光显示，屏幕本身不发光。</p>
+      <p><strong>无需电池。</strong>画面显示不需要供电，设备内无电池，仅更换照片时需供电。</p>
+      <p><strong>换张照片，换一种陪伴。</strong>照片、留言、便签，都能放在这里。</p>
+    </div>
+    <aside class="screen-care" aria-labelledby="screen-care-title">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 4.1a2 2 0 0 1 3.4 0l8 14a2 2 0 0 1-1.7 3H4a2 2 0 0 1-1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg>
+      <div><h2 id="screen-care-title">请轻放，注意保护屏幕。</h2><p>墨水屏非常脆弱，表面是一层普通玻璃，请避免挤压、弯折和硬物磕碰。放入包中时，建议做好防护，避免与钥匙等硬物混放。</p></div>
+    </aside>
+    <section id="start" aria-labelledby="start-title">
+      <div class="section-heading"><span class="section-no mono">01</span><div><h2 id="start-title">从连接开始，就这么简单。</h2></div></div>
+      <div class="steps">
+        <article class="step"><span class="step-number mono">STEP 01</span><h3>给设备供电</h3><p>通过 Type-C 接口给设备供电。可用充电头、充电宝、电脑 USB，或用 Type-C to Type-C 线连接手机和设备。</p><svg class="step-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M11 3v5M21 3v5M9 8h14v6a7 7 0 0 1-14 0ZM16 21v8"/></svg></article>
+        <article class="step"><span class="step-number mono">STEP 02</span><h3>连接它的 Wi-Fi</h3><p>打开手机「设置 → Wi-Fi」，选择名字以 MoInk 开头的热点。</p><span class="wifi-tag mono">MoInk-XXXX<small>无密码 · 后四位由 MAC 地址生成，每台不同</small></span></article>
+        <article class="step"><span class="step-number mono">STEP 03</span><h3>保持连接</h3><p>出现「无互联网」「此网络不可上网」时，选择<strong>仍然连接 / 保持连接 / 使用此网络</strong>。</p><svg class="step-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M3 11a20 20 0 0 1 26 0M7 16a14 14 0 0 1 18 0M11 21a8 8 0 0 1 10 0"/><circle cx="16" cy="26" r="1" fill="currentColor"/></svg><p class="step-note">MoInk 热点由设备自身发出，不提供互联网。这不是故障，也不影响传图。</p></article>
+        <article class="step"><span class="step-number mono">STEP 04</span><h3>打开创作页</h3><p>连接 MoInk 热点后，手机会自动弹出连接页。极少数手机不会自动弹出，可手动使用系统浏览器访问下方地址。</p><svg class="step-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="5" width="26" height="22" rx="3"/><path d="M3 12h26M8 9h.1M12 9h.1M13 17l-3 3 3 3M19 17l3 3-3 3"/></svg></article>
+      </div>
+      <div class="device-address"><div><p class="address-label">创作页地址 · 仅连接 MoInk 热点后可用</p><span class="address-value mono">http://192.168.4.1</span></div><button class="copy-button" type="button" id="copy-address">复制地址</button></div>
+      <input class="manual-copy mono" id="manual-address" aria-label="自动复制失败，请长按复制创作页地址" value="http://192.168.4.1" readonly hidden>
+    </section>
+    <section id="create" aria-labelledby="create-title">
+      <div class="section-heading"><span class="section-no mono">02</span><div><h2 id="create-title">放上你的第一张照片。</h2></div></div>
+      <div class="create-layout"><ul class="recipe">
+        <li><div><h3>选一张喜欢的照片</h3><p>在「拍立得」模式中点「选择图片」。先试试主体清晰、明暗分明的照片，四色效果更容易出彩。</p></div></li>
+        <li><div><h3>裁一裁，写点什么</h3><p>拖动、双指缩放来调整构图。可以保留默认风格，也可以添加白边和文字，再看看预览。</p></div></li>
+        <li><div><h3>点「上传并刷新屏幕」</h3><p>等屏幕完成刷新。画面稳定后，就可以把它放在喜欢的地方了。</p></div></li>
+      </ul><div class="note-demo"><div class="note-card"><span class="date mono">A NOTE TO YOU</span><h3>今天也有<br>值得记住的小事。</h3><span class="note-line">慢一点，好好生活。</span></div><p class="note-caption">不放照片也很好看。切换「便签」模式，写一句话就好。</p></div></div>
+    </section>
+    <section id="how" aria-labelledby="how-title">
+      <div class="section-heading"><span class="section-no mono">03</span><div><h2 id="how-title">它为什么有一点特别？</h2><p>一块不会自己发光的屏幕，却能把画面留下来。</p></div></div>
+      <div class="science-top"><div><h3>让颜料轻轻移动，<br>让画面静静留下。</h3><p>屏幕里有能被电场驱动的带电颜料颗粒。刷新时，驱动电压改变颗粒的位置，形成不同颜色。画面稳定后，屏幕不需要持续供电来维持显示，所以即使断电，照片也会留在原处。<br><br>它依靠环境光被看见，就像一张纸。在没有光的地方，需要开灯才能看清。</p></div><div class="palette-box"><p class="eyebrow" style="margin:0 0 17px">FOUR COLORS. MANY POSSIBILITIES.</p><div class="swatches"><div class="swatch"><b></b><span>黑</span></div><div class="swatch"><b></b><span>白</span></div><div class="swatch"><b></b><span>黄</span></div><div class="swatch"><b></b><span>红</span></div></div><div class="dither-row"><span class="dither" aria-hidden="true"></span><p><strong>只有四色，怎么显示照片？</strong><br>把不同颜色的小像素交错排列，远看就有了更多层次。这叫「抖动」，像印刷的网点；效果会与手机屏幕有所不同。</p></div></div></div>
+      <div class="principles"><article><h3>照片在手机里处理</h3><p>选图、裁剪、调色和文字排版，以及使用四色抖动算法将照片转为四色，都在你的浏览器里完成，再通过 Wi-Fi 把处理后的画面传给设备。这个流程不需要把照片上传到云端。</p></article></div>
+    </section>
+    <div class="save-card"><a id="save-card" href="MoInk-welcome-static-552x768.png">保存欢迎卡至本地</a><p class="save-card-hint">点击打开原图，长按图片保存。</p></div>
+  </main>
+  <footer class="wrap"><span>墨印 · MoInk &nbsp; / &nbsp; 把喜欢的瞬间，放在身边。</span></footer>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script>
+    'use strict';
+    const DEVICE_URL = 'http://192.168.4.1';
+    let toastTimer;
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message; toast.hidden = false;
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.hidden = true; }, 4200);
+    }
+    document.getElementById('copy-address').addEventListener('click', async () => {
+      let copied = false;
+      try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(DEVICE_URL); copied = true; } } catch (_) {}
+      if (!copied) {
+        const field = document.getElementById('manual-address');
+        field.hidden = false; field.focus(); field.select(); field.setSelectionRange(0, field.value.length);
+        try { copied = document.execCommand('copy'); } catch (_) {}
+        if (copied) field.hidden = true;
+      }
+      showToast(copied ? '地址已复制，连上 MoInk 后在浏览器里粘贴打开。' : '请长按地址输入框，手动复制。');
+    });
+  </script>
+</body>
+</html>
